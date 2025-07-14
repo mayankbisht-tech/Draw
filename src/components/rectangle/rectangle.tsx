@@ -1,55 +1,48 @@
-import React, { useEffect, useRef, useState } from 'react';
 
-export default function Rectangle() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+import { useEffect, useState } from 'react';
+import { type Shape } from '../../App';
+
+type Props = {
+  shapes: Shape[];
+  setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
+};
+
+export default function Rectangle({ setShapes }: Props) {
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
-  const [endPos, setEndPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
+      if (e.clientY < 64) return;
       setStartPos({ x: e.clientX, y: e.clientY });
-      setEndPos(null);
     };
 
     const handleMouseUp = (e: MouseEvent) => {
-      setEndPos({ x: e.clientX, y: e.clientY });
+      if (!startPos) return;
+      const x1 = startPos.x;
+      const y1 = startPos.y;
+      const x2 = e.clientX;
+      const y2 = e.clientY;
+
+      const newShape: Shape = {
+        id: crypto.randomUUID(),
+        type: 'rectangle',
+        x: Math.min(x1, x2),
+        y: Math.min(y1, y2),
+        width: Math.abs(x2 - x1),
+        height: Math.abs(y2 - y1),
+      };
+
+      setShapes((prev) => [...prev, newShape]);
+      setStartPos(null);
     };
 
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
-
     return () => {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [startPos, setShapes]);
 
-  useEffect(() => {
-    if (!startPos || !endPos || !canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const x = Math.min(startPos.x, endPos.x);
-    const y = Math.min(startPos.y, endPos.y);
-    const width = Math.abs(endPos.x - startPos.x);
-    const height = Math.abs(endPos.y - startPos.y);
-
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, width, height);
-  }, [startPos, endPos]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      width={window.innerWidth}
-      height={window.innerHeight}
-      className="fixed top-0 left-0 z-10 pointer-events-none"
-      style={{ backgroundColor: 'transparent' }}
-    />
-  );
+  return null;
 }

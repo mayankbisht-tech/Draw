@@ -1,23 +1,42 @@
 import './App.css';
 import Rectangle from './components/rectangle/rectangle.tsx'; 
 import CircleCanvas from './components/circle/circle.tsx';
+import Eraser from './components/eraser/eraser.tsx';
+import CanvasLayer from './components/canvas/canvasLayer.tsx';
+
+
+
 import { useState } from 'react';
+export type Shape = {
+  id: string;
+  type: 'rectangle' | 'circle';
+  x: number;
+  y: number;
+  height?: number;
+  width?: number;
+  radius?: number;
+};
+
 function App(){
-const [curr,setCurr]=useState("circle")
+
+   const [tool, setTool] = useState<'rectangle' | 'circle' | 'eraser'>('circle');
+  const [shapes, setShapes] = useState<Shape[]>([]);
 
   return (
 
   <div>
     <div className='h-screen w-screen flex flex-col items-center bg-black'>
-      <div className="mt-5 h-[4rem] w-[50rem] border-4 rounded-xl bg-stone-900 flex items-center justify-items-start px-4">
-        <button onClick={()=>setCurr("rectangle")} className={`text-white select-none ${curr=="rectangle" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`}>Rectangle</button>
-        <button onClick={()=>setCurr("circle")} className={`text-white select-none ${curr=="circle" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`}>Circle</button>
-        <button onClick={()=>setCurr("eraser")} className={`text-white select-none ${curr=="eraser" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`}>Eraser</button>
+      <div className="mt-5 h-[4rem] w-[50rem] border-4 rounded-xl bg-stone-900 flex items-center justify-items-start px-4 z-50">
+        <button onClick={()=>setTool("rectangle")} className={`text-white select-none ${tool==="rectangle" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`}>Rectangle</button>
+        <button onClick={()=>setTool("circle")} className={`text-white select-none ${tool==="circle" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`}>Circle</button>
+        <button onClick={()=>setTool("eraser")} className={`text-white select-none ${tool==="eraser" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`}>Eraser</button>
 
     </div>
-  {curr==="rectangle"&&<Rectangle/>}
-  {curr==="circle"&&<CircleCanvas/>}
-  {curr==="eraser"&&<Eraser/>}
+  <CanvasLayer shapes={shapes} />
+  {tool==="rectangle"&&<Rectangle shapes={shapes} setShapes={setShapes}/>}
+  {tool==="circle"&&<CircleCanvas shapes={shapes} setShapes={setShapes}/>}
+  {tool==="eraser"&&<Eraser shapes={shapes} setShapes={setShapes}/>}
+
 
 
   </div>

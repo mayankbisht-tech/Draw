@@ -7,7 +7,7 @@ type Props = {
   setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
 };
 
-export default function Rectangle({ setShapes }: Props) {
+export default function Rectangle({setShapes }: Props ) {
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {

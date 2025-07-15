@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import {type Shape } from '../../App';
-
+import { type Shape } from '../../App';
 type Props = {
   shapes: Shape[];
 };
@@ -25,6 +24,11 @@ export default function CanvasLayer({ shapes }: Props) {
         ctx.beginPath();
         ctx.arc(shape.x, shape.y, shape.radius!, 0, 2 * Math.PI);
         ctx.stroke();
+      } else if(shape.type==="line"){
+          ctx.moveTo(shape.x,shape.y);
+          ctx.lineTo(shape.x2!, shape.y2!);
+          ctx.stroke();
+
       }
     });
   }, [shapes]);

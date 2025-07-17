@@ -5,21 +5,21 @@ import '../../App.css';
 export default function Dashboard(){
     const navigate=useNavigate();
     return (
-        <div className="w-screen h-screen flex-col bg-neutral-900 flex justify-center items-center">
+        <div className="w-screen h-screen flex-col bg-emerald-600 flex justify-center items-center">
       
       <div>
-        <p className="text-9xl text-shadow-sky-500 text-white">Draw</p>
+        <p className="text-9xl text-shadow-teal-900 text-white mb-4">Draw</p>
       </div>
       <div>
         <button
           onClick={() => navigate('/signin')}
-          className="bg-blue-500 hover:bg-blue-700 text-white mx-2 font-bold py-2 px-4 rounded"
+          className="bg-zinc-500 hover:bg-zinc-800 text-white mx-2 font-bold py-2 px-4 rounded"
         >
           Sign In
         </button>
         <button
           onClick={() => navigate('/signup')}
-          className="bg-blue-500 hover:bg-blue-700 text-white mx-2 font-bold py-2 px-4 rounded"
+          className="bg-zinc-500 hover:bg-zinc-800 text-white mx-2 font-bold py-2 px-4 rounded"
         >
           Sign Up
         </button>

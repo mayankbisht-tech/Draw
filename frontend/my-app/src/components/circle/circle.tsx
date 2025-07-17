@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { type Shape } from '../imp.tsx';
+import { type Shape } from '../../authentication/imp.tsx';
 
 
 type Props = {

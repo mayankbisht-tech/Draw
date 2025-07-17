@@ -1,5 +1,5 @@
 import React, { useRef, type RefObject } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ import useNavigate
+import { useNavigate } from "react-router-dom";
 
 interface SignupProps {
   setToken: React.Dispatch<React.SetStateAction<string | null>>;
@@ -10,7 +10,7 @@ export default function Signup({ setToken }: SignupProps) {
   const lastnameref = useRef<HTMLInputElement>(null);
   const emailref = useRef<HTMLInputElement>(null);
   const passwordref = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate(); // ✅ use navigate hook
+  const navigate = useNavigate(); 
 
   const keyHandleDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
@@ -41,7 +41,7 @@ export default function Signup({ setToken }: SignupProps) {
       alert(data.message || "Signed up successfully!");
       localStorage.setItem("token", data.token);
       setToken(data.token);
-      navigate("/dashboard"); // ✅ go to imp.tsx route
+      navigate("/dashboard"); 
     } else {
       alert(data.error || "Signup failed");
     }
@@ -49,6 +49,10 @@ export default function Signup({ setToken }: SignupProps) {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-950">
+      <div><button
+          onClick={() => navigate('/')}
+          className="absolute top-4 right-4 bg-blue-500 hover:bg-blue-700 text-white mx-2 font-bold py-2 px-4 rounded"
+        >Home</button></div>
       <div className="flex flex-col items-center space-y-4">
         <p className="font-bold text-2xl text-white">Sign Up</p>
         <input

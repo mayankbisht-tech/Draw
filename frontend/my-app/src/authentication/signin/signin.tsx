@@ -33,7 +33,7 @@ const navigate = useNavigate();
     if (res.ok) {
   alert(data.message || "Signed in successfully");
     setToken(data.token)
-        navigate("/dashboard"); // ✅ go to imp.tsx route
+        navigate("/dashboard"); 
     localStorage.setItem("token", data.token);
   console.log(data.token);
 } else {
@@ -43,6 +43,10 @@ const navigate = useNavigate();
   return (
   
     <div className="flex items-center justify-center min-h-screen bg-gray-950">
+      <div><button
+          onClick={() => navigate('/')}
+          className="absolute top-4 right-4 bg-blue-500 hover:bg-blue-700 text-white mx-2 font-bold py-2 px-4 rounded"
+        >Home</button></div>
       <div className="flex flex-col items-center space-y-4">
         <p className="font-bold text-2xl text-white">Sign in</p>
         <input

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { type Shape } from '../../authentication/imp.tsx';
-
+import {type Shape } from '../../authentication/imp';
 
 type Props = {
   shapes: Shape[];
   setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
+  broadcastShape: (shape: Shape) => void;
 };
 
-export default function CircleCanvas({ setShapes }: Props) {
+export default function CircleCanvas({ shapes, setShapes, broadcastShape }: Props) {
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -38,16 +38,19 @@ export default function CircleCanvas({ setShapes }: Props) {
       };
 
       setShapes((prev) => [...prev, newShape]);
+      broadcastShape(newShape);
+
       setStart(null);
     };
 
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
+
     return () => {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [start, setShapes]);
+  }, [start, setShapes, broadcastShape]);
 
   return null;
 }

@@ -41,7 +41,7 @@ export default function Signup({ setToken }: SignupProps) {
       alert(data.message || "Signed up successfully!");
       localStorage.setItem("token", data.token);
       setToken(data.token);
-      navigate("/dashboard"); 
+      navigate("/room"); 
     } else {
       alert(data.error || "Signup failed");
     }

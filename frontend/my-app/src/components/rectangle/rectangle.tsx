@@ -1,13 +1,13 @@
-
 import { useEffect, useState } from 'react';
-import { type Shape } from '../../authentication/imp.tsx';
+import { type Shape } from '../../authentication/imp';
 
 type Props = {
   shapes: Shape[];
   setShapes: React.Dispatch<React.SetStateAction<Shape[]>>;
+  broadcastShape: (shape: Shape) => void;
 };
 
-export default function Rectangle({setShapes }: Props ) {
+export default function Rectangle({ setShapes, broadcastShape }: Props) {
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export default function Rectangle({setShapes }: Props ) {
       };
 
       setShapes((prev) => [...prev, newShape]);
+      broadcastShape(newShape);
       setStartPos(null);
     };
 
@@ -42,7 +43,7 @@ export default function Rectangle({setShapes }: Props ) {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [startPos, setShapes]);
+  }, [startPos, setShapes, broadcastShape]);
 
   return null;
 }

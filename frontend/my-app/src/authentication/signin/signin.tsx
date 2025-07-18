@@ -33,7 +33,7 @@ const navigate = useNavigate();
     if (res.ok) {
   alert(data.message || "Signed in successfully");
     setToken(data.token)
-        navigate("/dashboard"); 
+        navigate("/room"); 
     localStorage.setItem("token", data.token);
   console.log(data.token);
 } else {

@@ -1,59 +1,101 @@
-import WebSocket, { WebSocketServer } from "ws";
-import { v4 as uuidv4 } from "uuid";
-import http from "http";
+import { WebSocketServer } from "ws";
+import jwt from "jsonwebtoken";
+import url from "url";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import RoomModel from "./model/roomModel";
 
-const PORT = 8080;
+dotenv.config();
 
-const wss = new WebSocketServer({ port: PORT });
-console.log(`WebSocket server running on ws://localhost:${PORT}`);
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI!)
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB error:", err));
 
-const rooms: Map<string, Set<WebSocket & { id?: string; roomId?: string }>> = new Map();
+// WebSocket server on port 8080
+const wss = new WebSocketServer({ port: 8080 });
+console.log("🌐 WebSocket Server started on port 8080");
 
-const sendJson = (ws: WebSocket, data: any) => {
-  ws.send(JSON.stringify(data));
-};
+const rooms: { [roomId: string]: Set<any> } = {};
 
-wss.on("connection", (ws: WebSocket & { id?: string; roomId?: string }) => {
-  ws.id = uuidv4();
+wss.on("connection", async (ws, req) => {
+  const { query } = url.parse(req.url || "", true);
+  const token = query.token as string;
+  const roomId = query.roomId as string;
 
-  ws.on("message", (message) => {
-    try {
+  // ❌ Invalid token or room
+  if (!token || !roomId) {
+    ws.close();
+    return;
+  }
+
+  try {
+    // ✅ Verify token
+    const user = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+    // ✅ Join room
+    if (!rooms[roomId]) rooms[roomId] = new Set();
+    rooms[roomId].add(ws);
+    console.log(`👤 User ${user.id} joined room ${roomId}`);
+
+    // ✅ Send previous shapes to this user
+    const roomData = await RoomModel.findOne({ roomId });
+    if (roomData) {
+      ws.send(
+        JSON.stringify({
+          type: "load_previous_shapes",
+          shapes: (roomData as any).shapes || [],
+        })
+      );
+    }
+
+    // 🔁 Handle messages from this user
+    ws.on("message", async (message) => {
       const data = JSON.parse(message.toString());
 
-      if (data.type === "join-room") {
-        const { roomId } = data;
-        ws.roomId = roomId;
+      switch (data.type) {
+        case "draw_shape":
+          // Save to DB
+          await RoomModel.updateOne(
+            { roomId },
+            { $push: { shapes: data.shape } },
+            { upsert: true }
+          );
 
-        if (!rooms.has(roomId)) {
-          rooms.set(roomId, new Set());
-        }
+          // Broadcast to other users
+          rooms[roomId].forEach((client) => {
+            if (client !== ws && client.readyState === 1) {
+              client.send(JSON.stringify({ type: "draw_shape", shape: data.shape }));
+            }
+          });
+          break;
 
-        rooms.get(roomId)!.add(ws);
-        console.log(`Client ${ws.id} joined room ${roomId}`);
+        case "delete_shape":
+          // Delete from DB
+          await RoomModel.updateOne(
+            { roomId },
+            { $pull: { shapes: { id: data.shapeId } } }
+          );
+
+          // Notify others
+          rooms[roomId].forEach((client) => {
+            if (client !== ws && client.readyState === 1) {
+              client.send(JSON.stringify({ type: "delete_shape", shapeId: data.shapeId }));
+            }
+          });
+          break;
       }
+    });
 
-      if (data.type === "draw" && ws.roomId) {
-        const clientsInRoom = rooms.get(ws.roomId);
-        clientsInRoom?.forEach((client) => {
-          if (client !== ws && client.readyState === WebSocket.OPEN) {
-            sendJson(client, {
-              type: "draw",
-              shape: data.shape,
-            });
-          }
-        });
-      }
-    } catch (err) {
-      console.error("Invalid message", err);
-    }
-  });
+    // 🧹 On user disconnect
+    ws.on("close", () => {
+      rooms[roomId].delete(ws);
+      console.log(`❌ User ${user.id} left room ${roomId}`);
+    });
 
-  ws.on("close", () => {
-    if (ws.roomId && rooms.has(ws.roomId)) {
-      rooms.get(ws.roomId)!.delete(ws);
-      if (rooms.get(ws.roomId)!.size === 0) {
-        rooms.delete(ws.roomId);
-      }
-    }
-  });
+  } catch (err) {
+    console.error("JWT validation failed:", err);
+    ws.close();
+  }
 });

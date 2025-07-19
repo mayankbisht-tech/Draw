@@ -16,7 +16,7 @@ export default function JoinRoom() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="w-screen h-screen justify-center bg-slate-900 flex flex-col items-center gap-4">
       <input
         type="text"
         onChange={handleInputChange}

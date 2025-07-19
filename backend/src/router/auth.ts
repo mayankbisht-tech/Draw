@@ -1,96 +1,53 @@
+// backend/router/auth.ts
 import express from "express";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import User from "../model/user";
-import { registerSchema, loginSchema } from "../validation/authSchema";
-
 const router = express.Router();
+import User from "../model/user"; // ✅ adjust if path is different
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
+// POST /api/auth/register
 router.post("/register", async (req, res) => {
-  const result = registerSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({ error: result.error.errors });
-  }
-
-  const { firstname, lastname, email, password } = result.data;
+  const { firstname, lastname, email, password } = req.body;
 
   try {
-    const exists = await User.findOne({ email });
-    if (exists) {
-      return res.status(400).json({ error: "Email already exists" });
-    }
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ error: "User already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({
+
+    const user = await User.create({
       firstname,
       lastname,
       email,
       password: hashedPassword,
     });
-    await user.save();
 
-    const jwtSecret = process.env.SECRET;
-    if (!jwtSecret) {
-      return res.status(500).json({ error: "JWT secret not configured in environment" });
-    }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "default_secret");
 
-    const token = jwt.sign({ id: user._id }, jwtSecret, { expiresIn: "1h" });
-
-    return res.status(201).json({
-      message: "User registered successfully",
-      token,
-      user: {
-        id: user._id,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        email: user.email,
-      },
-    });
+    res.status(201).json({ message: "User registered successfully", token });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Some error occurred" });
+    console.error("Register error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
+// POST /api/auth/login
 router.post("/login", async (req, res) => {
-  const result = loginSchema.safeParse(req.body);
-  if (!result.success) {
-    return res.status(400).json({ error: result.error.errors });
-  }
-
-  const { email, password } = result.data;
+  const { email, password } = req.body;
 
   try {
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: "No user with this email found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ error: "Password incorrect" });
-    }
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: "Invalid credentials" });
 
-    const jwtSecret = process.env.SECRET;
-    if (!jwtSecret) {
-      return res.status(500).json({ error: "JWT secret not configured in environment" });
-    }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "default_secret");
 
-    const token = jwt.sign({ id: user._id }, jwtSecret, { expiresIn: "1h" });
-
-    return res.json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        firstname: user.firstname,
-        lastname: user.lastname,
-        email: user.email,
-      },
-    });
+    res.status(200).json({ message: "Login successful", token });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Server error" });
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

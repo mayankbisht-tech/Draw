@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import {type Shape } from '../../authentication/imp';
+import {type Shape } from '../../authentication/types';
 
 type Props = {
   shapes: Shape[];
@@ -49,8 +49,10 @@ export default function Eraser({ shapes, setShapes, broadcastDelete }: Props) {
         const trueIndex = shapes.length - 1 - index;
         const idToDelete = shapes[trueIndex].id;
 
-        setShapes((prev) => prev.filter((shape) => shape.id !== idToDelete));
-        broadcastDelete(idToDelete);
+        if (idToDelete !== undefined) {
+          setShapes((prev) => prev.filter((shape) => shape.id !== idToDelete));
+          broadcastDelete(idToDelete);
+        }
       }
     };
 

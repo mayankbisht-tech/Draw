@@ -1,87 +1,61 @@
-import { WebSocketServer, WebSocket } from "ws";
-import jwt from "jsonwebtoken";
-import url from "url";
-import mongoose from "mongoose";
-import dotenv from "dotenv";
-import RoomModel from "./model/roomModel";
+import WebSocket, { WebSocketServer } from 'ws';
+import { IncomingMessage } from 'http';
+import url from 'url';
 
-dotenv.config();
-
-mongoose.connect(process.env.DATABASE_URL!)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+type Shape = {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  radius?: number;
+  x2?: number;
+  y2?: number;
+  points?: { x: number; y: number }[];
+};
 
 const wss = new WebSocketServer({ port: 8080 });
-console.log("WebSocket Server started on ws://localhost:8080");
 
-const rooms: Record<string, Set<WebSocket>> = {};
+const rooms: Record<string, WebSocket[]> = {};
+const roomShapes: Record<string, Shape[]> = {};
 
-wss.on("connection", async (ws, req) => {
-  const { query } = url.parse(req.url || "", true);
-  const token = query.token as string;
+wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
+  const query = url.parse(req.url || '', true).query;
   const roomId = query.roomId as string;
 
-  if (!token || !roomId) {
-    ws.close();
-    return;
+  if (!rooms[roomId]) {
+    rooms[roomId] = [];
+    roomShapes[roomId] = [];
   }
+  rooms[roomId].push(ws);
 
-  try {
-    const user = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
+  // Send existing shapes
+  ws.send(JSON.stringify({ type: 'init', shapes: roomShapes[roomId] }));
 
-    if (!rooms[roomId]) rooms[roomId] = new Set();
-    rooms[roomId].add(ws);
-    console.log(`User ${user.id} joined room ${roomId}`);
+  ws.on('message', (message: string) => {
+    const data = JSON.parse(message);
+    const { type } = data;
 
-    const roomData = await RoomModel.findOne({ roomId });
-    if (roomData) {
-      ws.send(JSON.stringify({
-        type: "load_previous_shapes",
-        shapes: (roomData as any).shapes || [],
-      }));
-    }
-
-    ws.on("message", async (message) => {
-      try {
-        const data = JSON.parse(message.toString());
-
-        if (data.type === "draw_shape") {
-          await RoomModel.updateOne(
-            { roomId },
-            { $push: { shapes: data.shape } },
-            { upsert: true }
-          );
-
-          rooms[roomId].forEach((client) => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify({ type: "draw_shape", shape: data.shape }));
-            }
-          });
-
-        } else if (data.type === "delete_shape") {
-          await RoomModel.updateOne(
-            { roomId },
-            { $pull: { shapes: { id: data.shapeId } } }
-          );
-
-          rooms[roomId].forEach((client) => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify({ type: "delete_shape", shapeId: data.shapeId }));
-            }
-          });
+    if (type === 'shape') {
+      roomShapes[roomId].push(data.shape);
+      rooms[roomId].forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'shape', shape: data.shape }));
         }
-      } catch (error) {
-        console.error(" Error handling message:", error);
-      }
-    });
+      });
+    } else if (type === 'delete') {
+      const idToDelete = data.id;
+      roomShapes[roomId] = roomShapes[roomId].filter(s => s.id !== idToDelete);
+      rooms[roomId].forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'delete', id: idToDelete }));
+        }
+      });
+    }
+  });
 
-    ws.on("close", () => {
-      rooms[roomId].delete(ws);
-      console.log(` User ${user.id} left room ${roomId}`);
-    });
-
-  } catch (err) {
-    console.error(" JWT validation failed:", err);
-    ws.close();
-  }
+  ws.on('close', () => {
+    rooms[roomId] = rooms[roomId].filter(client => client !== ws);
+  });
 });

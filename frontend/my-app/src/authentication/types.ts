@@ -1,4 +1,9 @@
-export type ToolType = "rectangle" | "circle" | "line" | "eraser";
+export type ToolType = "pencil" | "rectangle" | "circle" | "line" | "eraser";
+
+export type Point = {
+  x: number;
+  y: number;
+};
 
 export type Shape = {
   type: ToolType;
@@ -10,6 +15,7 @@ export type Shape = {
   x2?: number;
   y2?: number;
   color?: string;
-  id?: string; 
+  id?: string;
+  points?: Point[];  
   roomId?: string;
 };

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { type Shape } from '../../authentication/imp';
+import { type Shape } from '../../authentication/types';
 
 type Props = {
   shapes: Shape[];

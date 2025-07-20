@@ -24,6 +24,18 @@ export default function CanvasLayer({ shapes, broadcastShape, broadcastDelete }:
       ctx.lineWidth = 2;
 
       switch (shape.type) {
+        case 'pencil':
+          ctx.beginPath();
+          if (shape.points) {
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.moveTo(shape.points[0].x, shape.points[0].y);
+            shape.points.forEach((point) => {
+              ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+          }
+          break;
         case 'rectangle':
           ctx.strokeRect(shape.x, shape.y, shape.width!, shape.height!);
           break;
@@ -54,4 +66,3 @@ export default function CanvasLayer({ shapes, broadcastShape, broadcastDelete }:
     />
   );
 }
-

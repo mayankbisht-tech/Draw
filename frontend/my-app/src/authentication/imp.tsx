@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { type ToolType, type Shape } from "./types";
+import Pencil from "../components/pencil/pencil";
+
 import Rectangle from "../components/rectangle/rectangle";
 import Circle from "../components/circle/circle";
 import Line from "../components/line/line";
@@ -92,6 +94,14 @@ export default function Imp({ roomId }: Props) {
         >
           <button 
             className={`text-white select-none ${
+              selectedTool === "pencil" ? "bg-blue-700" : "bg-gray-800"
+            } px-4 py-2 mx-2 rounded`} 
+            onClick={() => setSelectedTool("pencil")}
+          >
+            Pencil
+          </button>
+          <button 
+            className={`text-white select-none ${
               selectedTool === "rectangle" ? "bg-blue-700" : "bg-gray-800"
             } px-4 py-2 mx-2 rounded`} 
             onClick={() => setSelectedTool("rectangle")}
@@ -131,6 +141,13 @@ export default function Imp({ roomId }: Props) {
         broadcastDelete={broadcastDelete}
       />
 
+      {selectedTool === "pencil" && (
+        <Pencil
+          broadcastShape={broadcastShape}
+          shapes={shapes}
+          setShapes={setShapes}
+        />
+      )}
       {selectedTool === "rectangle" && (
         <Rectangle
           broadcastShape={broadcastShape}

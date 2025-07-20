@@ -16,16 +16,17 @@ export default function JoinRoom() {
   };
 
   return (
-    <div className="w-screen h-screen justify-center bg-slate-900 flex flex-col items-center gap-4">
-      <input
+    <div className="flex flex-col items-center justify-center w-screen h-screen bg-gradient-to-b from-gray-900 via-zinc-900 to-neutral-900 gap-4">
+    <input
         type="text"
         onChange={handleInputChange}
         placeholder="Enter Room ID"
-        className="px-4 py-2 border rounded-md text-black"
+        className="px-4 py-2 border border-zinc-600 rounded-md bg-zinc-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
       />
       <button
         onClick={handleJoinClick}
-        className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg"
+
       >
         Join
       </button>

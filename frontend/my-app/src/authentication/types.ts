@@ -10,6 +10,6 @@ export type Shape = {
   x2?: number;
   y2?: number;
   color?: string;
-  id?: string; // Unique ID for syncing
+  id?: string; 
   roomId?: string;
 };

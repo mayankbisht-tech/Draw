@@ -10,8 +10,8 @@ export default function Imp() {
   const [selectedTool, setSelectedTool] = useState<ToolType>("rectangle");
   const [shapes, setShapes] = useState<Shape[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
-  const roomId = localStorage.getItem("roomId"); // make sure this is set when user joins
-  const token = localStorage.getItem("token");   // make sure this is set after login/signup
+  const roomId = localStorage.getItem("roomId"); 
+  const token = localStorage.getItem("token");   
 
   useEffect(() => {
     if (!roomId || !token) {
@@ -30,7 +30,7 @@ export default function Imp() {
       const data = JSON.parse(event.data);
 
       if (data.type === "load_previous_shapes") {
-        setShapes(data.shapes); // ← Load previous shapes
+        setShapes(data.shapes); 
       }
 
       if (data.type === "draw") {

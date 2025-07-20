@@ -1,11 +1,9 @@
-// backend/router/auth.ts
 import express from "express";
 const router = express.Router();
-import User from "../model/user"; // ✅ adjust if path is different
+import User from "../model/user"; 
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-// POST /api/auth/register
 router.post("/register", async (req, res) => {
   const { firstname, lastname, email, password } = req.body;
 
@@ -31,7 +29,6 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// POST /api/auth/login
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 

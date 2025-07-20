@@ -3,7 +3,6 @@ import Room from "../model/room";
 
 const router = express.Router();
 
-// Get all shapes for a room
 router.get("/:roomId", async (req, res) => {
   try {
     const room = await Room.findOne({ roomId: req.params.roomId });
@@ -14,7 +13,6 @@ router.get("/:roomId", async (req, res) => {
   }
 });
 
-// Save new shape to room
 router.post("/:roomId", async (req, res) => {
   const { type, props } = req.body;
   try {

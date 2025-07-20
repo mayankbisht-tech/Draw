@@ -1,4 +1,4 @@
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import jwt from "jsonwebtoken";
 import url from "url";
 import mongoose from "mongoose";
@@ -7,15 +7,14 @@ import RoomModel from "./model/roomModel";
 
 dotenv.config();
 
-mongoose
-  .connect(process.env.DATABASE_URL!)
+mongoose.connect(process.env.DATABASE_URL!)
   .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB error:", err));
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 const wss = new WebSocketServer({ port: 8080 });
-console.log("WebSocket Server started on port 8080");
+console.log("WebSocket Server started on ws://localhost:8080");
 
-const rooms: { [roomId: string]: Set<any> } = {};
+const rooms: Record<string, Set<WebSocket>> = {};
 
 wss.on("connection", async (ws, req) => {
   const { query } = url.parse(req.url || "", true);
@@ -28,7 +27,7 @@ wss.on("connection", async (ws, req) => {
   }
 
   try {
-    const user = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const user = jwt.verify(token, process.env.JWT_SECRET!) as { id: string };
 
     if (!rooms[roomId]) rooms[roomId] = new Set();
     rooms[roomId].add(ws);
@@ -36,19 +35,17 @@ wss.on("connection", async (ws, req) => {
 
     const roomData = await RoomModel.findOne({ roomId });
     if (roomData) {
-      ws.send(
-        JSON.stringify({
-          type: "load_previous_shapes",
-          shapes: (roomData as any).shapes || [],
-        })
-      );
+      ws.send(JSON.stringify({
+        type: "load_previous_shapes",
+        shapes: (roomData as any).shapes || [],
+      }));
     }
 
     ws.on("message", async (message) => {
-      const data = JSON.parse(message.toString());
+      try {
+        const data = JSON.parse(message.toString());
 
-      switch (data.type) {
-        case "draw_shape":
+        if (data.type === "draw_shape") {
           await RoomModel.updateOne(
             { roomId },
             { $push: { shapes: data.shape } },
@@ -56,34 +53,35 @@ wss.on("connection", async (ws, req) => {
           );
 
           rooms[roomId].forEach((client) => {
-            if (client !== ws && client.readyState === 1) {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({ type: "draw_shape", shape: data.shape }));
             }
           });
-          break;
 
-        case "delete_shape":
+        } else if (data.type === "delete_shape") {
           await RoomModel.updateOne(
             { roomId },
             { $pull: { shapes: { id: data.shapeId } } }
           );
 
           rooms[roomId].forEach((client) => {
-            if (client !== ws && client.readyState === 1) {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
               client.send(JSON.stringify({ type: "delete_shape", shapeId: data.shapeId }));
             }
           });
-          break;
+        }
+      } catch (error) {
+        console.error(" Error handling message:", error);
       }
     });
 
     ws.on("close", () => {
       rooms[roomId].delete(ws);
-      console.log(`User ${user.id} left room ${roomId}`);
+      console.log(` User ${user.id} left room ${roomId}`);
     });
 
   } catch (err) {
-    console.error("JWT validation failed:", err);
+    console.error(" JWT validation failed:", err);
     ws.close();
   }
 });

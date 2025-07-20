@@ -1,4 +1,4 @@
-import {type  Shape } from '../authentication/imp';
+import {type  Shape } from '../authentication/types';
 import { Socket } from 'socket.io-client';
 
 export const broadcastShape = (socket: any, shape: Shape) => {

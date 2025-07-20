@@ -20,7 +20,13 @@ router.post("/register", async (req, res) => {
       password: hashedPassword,
     });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "default_secret");
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined in environment variables");
+    }
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined in environment variables");
+    }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET as string);
 
     res.status(201).json({ message: "User registered successfully", token });
   } catch (err) {
@@ -39,7 +45,10 @@ router.post("/login", async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ error: "Invalid credentials" });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "default_secret");
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not defined in environment variables");
+    }
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET as string);
 
     res.status(200).json({ message: "Login successful", token });
   } catch (err) {

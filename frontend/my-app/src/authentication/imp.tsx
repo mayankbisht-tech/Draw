@@ -6,39 +6,42 @@ import Line from "../components/line/line";
 import Eraser from "../components/eraser/eraser";
 import CanvasLayer from "../components/CanvasLayer";
 
-export default function Imp() {
+type Props = {
+  roomId: string;
+};
+
+export default function Imp({ roomId }: Props) {
   const [selectedTool, setSelectedTool] = useState<ToolType>("rectangle");
   const [shapes, setShapes] = useState<Shape[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
-  const roomId = localStorage.getItem("roomId"); 
-  const token = localStorage.getItem("token");   
 
   useEffect(() => {
-    if (!roomId || !token) {
-      console.error("Missing roomId or token");
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      console.error("No token found");
       return;
     }
 
-    const wsURL = `ws://localhost:8080?roomId=${roomId}&token=${token}`;
-    socketRef.current = new WebSocket(wsURL);
+    socketRef.current = new WebSocket(`ws://localhost:8080?roomId=${roomId}&token=${token}`);
 
     socketRef.current.onopen = () => {
-      console.log("WebSocket connection established");
+      console.log("WebSocket connection opened");
     };
 
     socketRef.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
       if (data.type === "load_previous_shapes") {
-        setShapes(data.shapes); 
+        setShapes(data.shapes);
       }
 
-      if (data.type === "draw") {
+      if (data.type === "draw_shape") {
         setShapes((prev) => [...prev, data.shape]);
       }
 
-      if (data.type === "delete") {
-        setShapes((prev) => prev.filter((shape) => shape.id !== data.id));
+      if (data.type === "delete_shape") {
+        setShapes((prev) => prev.filter((shape) => shape.id !== data.shapeId));
       }
     };
 
@@ -49,31 +52,84 @@ export default function Imp() {
     return () => {
       socketRef.current?.close();
     };
-  }, [roomId, token]);
+  }, [roomId]);
 
   const broadcastShape = (shape: Shape) => {
-    socketRef.current?.send(
-      JSON.stringify({ type: "draw", shape, roomId })
-    );
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(
+        JSON.stringify({
+          type: "draw_shape",
+          shape,
+          roomId,
+        })
+      );
+    } else {
+      console.warn("WebSocket not connected");
+    }
   };
 
   const broadcastDelete = (id: string) => {
-    socketRef.current?.send(
-      JSON.stringify({ type: "delete", id, roomId })
-    );
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(
+        JSON.stringify({
+          type: "delete_shape",
+          shapeId: id,
+          roomId,
+        })
+      );
+    } else {
+      console.warn("WebSocket not connected");
+    }
   };
 
   return (
     <div>
       <div className="h-screen w-screen flex flex-col items-center bg-black">
-        <div className="mt-5 h-[4rem] w-[50rem] border-2 rounded-xl bg-stone-900 flex items-center justify-items-start px-4 z-50" style={{ display: "flex", gap: "10px" }}>
-        <button className={`text-white select-none ${selectedTool==="rectangle" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`} onClick={() => setSelectedTool("rectangle")}>Rectangle</button>
-        <button className={`text-white select-none ${selectedTool==="circle" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`} onClick={() => setSelectedTool("circle")}>Circle</button>
-        <button className={`text-white select-none ${selectedTool==="line" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`} onClick={() => setSelectedTool("line")}>Line</button>
-        <button className={`text-white select-none ${selectedTool==="eraser" ?"bg-blue-700":"bg-gray-800"} px-4 py-2 mx-2 rounded`} onClick={() => setSelectedTool("eraser")}>Eraser</button>
+
+        <div 
+          className="mt-5 h-[4rem] w-[50rem] border-2 rounded-xl bg-stone-900 flex items-center justify-items-start px-4 z-50" 
+          style={{ display: "flex", gap: "10px" }}
+        >
+          <button 
+            className={`text-white select-none ${
+              selectedTool === "rectangle" ? "bg-blue-700" : "bg-gray-800"
+            } px-4 py-2 mx-2 rounded`} 
+            onClick={() => setSelectedTool("rectangle")}
+          >
+            Rectangle
+          </button>
+          <button 
+            className={`text-white select-none ${
+              selectedTool === "circle" ? "bg-blue-700" : "bg-gray-800"
+            } px-4 py-2 mx-2 rounded`} 
+            onClick={() => setSelectedTool("circle")}
+          >
+            Circle
+          </button>
+          <button 
+            className={`text-white select-none ${
+              selectedTool === "line" ? "bg-blue-700" : "bg-gray-800"
+            } px-4 py-2 mx-2 rounded`} 
+            onClick={() => setSelectedTool("line")}
+          >
+            Line
+          </button>
+          <button 
+            className={`text-white select-none ${
+              selectedTool === "eraser" ? "bg-blue-700" : "bg-gray-800"
+            } px-4 py-2 mx-2 rounded`} 
+            onClick={() => setSelectedTool("eraser")}
+          >
+            Eraser
+          </button>
+        </div>
       </div>
-    </div>
-      <CanvasLayer shapes={shapes} />
+
+      <CanvasLayer
+        shapes={shapes}
+        broadcastShape={broadcastShape}
+        broadcastDelete={broadcastDelete}
+      />
 
       {selectedTool === "rectangle" && (
         <Rectangle
@@ -97,7 +153,11 @@ export default function Imp() {
         />
       )}
       {selectedTool === "eraser" && (
-        <Eraser shapes={shapes} setShapes={setShapes} broadcastDelete={broadcastDelete} />
+        <Eraser 
+          shapes={shapes} 
+          setShapes={setShapes} 
+          broadcastDelete={broadcastDelete} 
+        />
       )}
     </div>
   );

@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
-import { type Shape } from '../authentication/imp';
+import { type Shape } from '../authentication/types';
 
 type Props = {
   shapes: Shape[];
+  broadcastShape: (shape: Shape) => void;
+  broadcastDelete: (id: string) => void;
 };
 
-export default function CanvasLayer({ shapes }: Props) {
+export default function CanvasLayer({ shapes, broadcastShape, broadcastDelete }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -52,3 +54,4 @@ export default function CanvasLayer({ shapes }: Props) {
     />
   );
 }
+

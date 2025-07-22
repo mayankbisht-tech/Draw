@@ -7,12 +7,12 @@ import Circle from "../components/circle/circle";
 import Line from "../components/line/line";
 import Eraser from "../components/eraser/eraser";
 import CanvasLayer from "../components/CanvasLayer";
+import { useParams } from "react-router-dom";
 
-type Props = {
-  roomId: string;
-};
 
-export default function Imp({ roomId }: Props) {
+export default function Imp(){
+  const params=useParams<{ roomId: string }>();
+  const roomId = params.roomId || "defaultRoom"; 
   const [selectedTool, setSelectedTool] = useState<ToolType>("rectangle");
   const [shapes, setShapes] = useState<Shape[]>([]);
   const socketRef = useRef<WebSocket | null>(null);

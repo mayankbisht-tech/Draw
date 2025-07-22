@@ -1,11 +1,11 @@
 import Signup from "./authentication/signup/signup";
 import Signin from "./authentication/signin/signin";
 import Room from "./authentication/room/room";
-import Dashboard from "./authentication/Dashboard/Dashboard";
 import './App.css';
 import { useEffect, useState } from "react";
 import Imp from "./authentication/imp";
 import { Routes, Route, Navigate } from "react-router-dom";
+import Dashboard from "./authentication/dashboard/Dashboard";
 
 function App() {
   const [token, setToken] = useState<string | null>(null);

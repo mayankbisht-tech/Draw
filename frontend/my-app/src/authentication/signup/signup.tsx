@@ -23,7 +23,7 @@ export default function Signup({ setToken }: SignupProps) {
   };
 
   const handleSubmit = async () => {
-    const res = await fetch("http://localhost:5000/api/auth/register", {
+    const res = await fetch("http://excelidraw-ncsy.onrender.com/api/auth/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

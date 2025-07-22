@@ -32,7 +32,6 @@ wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
   }
   rooms[roomId].push(ws);
 
-  // Send existing shapes
   ws.send(JSON.stringify({ type: 'init', shapes: roomShapes[roomId] }));
 
   ws.on('message', (message: string) => {

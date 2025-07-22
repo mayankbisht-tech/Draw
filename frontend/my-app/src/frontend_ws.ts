@@ -2,7 +2,7 @@
 let socket: WebSocket | null = null;
 
 export const connectWebSocket = (roomId: string, onDraw: (shape: any) => void) => {
-  socket = new WebSocket("ws://localhost:8080");
+  socket = new WebSocket("https://draw-xgjp.onrender.com");
 
   socket.onopen = () => {
     console.log("WebSocket connected");

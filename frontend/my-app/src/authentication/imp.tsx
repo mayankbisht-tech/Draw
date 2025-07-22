@@ -25,7 +25,7 @@ export default function Imp(){
       return;
     }
 
-    socketRef.current = new WebSocket(`ws://localhost:8080?roomId=${roomId}&token=${token}`);
+    socketRef.current = new WebSocket(`https://draw-xgjp.onrender.com?roomId=${roomId}&token=${token}`);
 
     socketRef.current.onopen = () => {
       console.log("WebSocket connection opened");

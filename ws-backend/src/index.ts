@@ -1,3 +1,4 @@
+import http from 'http';
 import WebSocket, { WebSocketServer } from 'ws';
 import { IncomingMessage } from 'http';
 import url from 'url';
@@ -15,7 +16,8 @@ type Shape = {
   points?: { x: number; y: number }[];
 };
 
-const wss = new WebSocketServer({ port: 8080 });
+const server = http.createServer();
+const wss = new WebSocketServer({ server });
 
 const rooms: Record<string, WebSocket[]> = {};
 const roomShapes: Record<string, Shape[]> = {};
@@ -58,4 +60,9 @@ wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
   ws.on('close', () => {
     rooms[roomId] = rooms[roomId].filter(client => client !== ws);
   });
+});
+
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+  console.log(`WebSocket server listening on port ${PORT}`);
 });

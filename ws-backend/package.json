@@ -1,7 +1,8 @@
 {
   "name": "ws-backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "WebSocket backend for collaborative drawing app",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node src/index.ts",
     "build": "tsc",
@@ -10,10 +11,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
-    "@types/mongoose": "^5.11.96",
-    "@types/socket.io-client": "^1.4.36",
     "dotenv": "^17.2.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.4",
@@ -23,7 +21,7 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^24.0.14",
+    "@types/node": "^20.10.6",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
     "ts-node": "^10.9.2",

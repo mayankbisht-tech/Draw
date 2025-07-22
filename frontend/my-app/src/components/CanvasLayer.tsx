@@ -61,7 +61,7 @@ export default function CanvasLayer({ shapes, broadcastShape, broadcastDelete }:
       ref={canvasRef}
       width={window.innerWidth}
       height={window.innerHeight}
-      className="fixed top-0 left-0 z-0 pointer-events-none"
+      className="fixed top-0 left-0 z-0 pointer-events-auto"
       style={{ backgroundColor: 'transparent' }}
     />
   );

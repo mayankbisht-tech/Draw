@@ -10,18 +10,28 @@ type Props = {
 export default function Rectangle({ setShapes, broadcastShape }: Props) {
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
 
+  const getClientPos = (e: MouseEvent | TouchEvent) => {
+    if ('touches' in e) {
+      const touch = e.touches[0] || e.changedTouches[0];
+      return { x: touch.clientX, y: touch.clientY };
+    } else {
+      return { x: e.clientX, y: e.clientY };
+    }
+  };
+
   useEffect(() => {
-    const handleMouseDown = (e: MouseEvent) => {
-      if (e.clientY < 64) return;
-      setStartPos({ x: e.clientX, y: e.clientY });
+    const handleDown = (e: MouseEvent | TouchEvent) => {
+      const { x, y } = getClientPos(e);
+      if (y < 64) return;
+      setStartPos({ x, y });
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
+    const handleUp = (e: MouseEvent | TouchEvent) => {
       if (!startPos) return;
+      const { x: x2, y: y2 } = getClientPos(e);
+
       const x1 = startPos.x;
       const y1 = startPos.y;
-      const x2 = e.clientX;
-      const y2 = e.clientY;
 
       const newShape: Shape = {
         id: crypto.randomUUID(),
@@ -37,11 +47,16 @@ export default function Rectangle({ setShapes, broadcastShape }: Props) {
       setStartPos(null);
     };
 
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousedown', handleDown);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchstart', handleDown, { passive: false });
+    window.addEventListener('touchend', handleUp, { passive: false });
+
     return () => {
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousedown', handleDown);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchstart', handleDown);
+      window.removeEventListener('touchend', handleUp);
     };
   }, [startPos, setShapes, broadcastShape]);
 

@@ -1,181 +1,191 @@
-import React, { useEffect, useRef, useState } from "react";
-import { type ToolType, type Shape } from "./types";
-import Pencil from "../components/pencil/pencil";
-
-import Rectangle from "../components/rectangle/rectangle";
-import Circle from "../components/circle/circle";
-import Line from "../components/line/line";
-import Eraser from "../components/eraser/eraser";
-import CanvasLayer from "../components/CanvasLayer";
+import { useEffect, useRef, useState } from "react";
+import { type Shape } from "../authentication/types";
 import { useParams } from "react-router-dom";
-
-
-export default function Imp(){
-  const params=useParams<{ roomId: string }>();
-  const roomId = params.roomId || "defaultRoom"; 
-  const [selectedTool, setSelectedTool] = useState<ToolType>("rectangle");
+import Eraser from "../components/eraser/eraser";
+import Line from "../components/line/line";
+import CircleCanvas from "../components/circle/circle";
+import Rectangle from "../components/rectangle/rectangle";
+import Pencil from "../components/pencil/pencil";
+import CanvasLayer from "../components/CanvasLayer";
+type Props = {
+  broadcastShape: (shape: Shape) => void;
+  broadcastDelete: (id: string) => void;
+};
+export default function Imp({ broadcastShape, broadcastDelete }: Props) {
+  const [selectedTool, setSelectedTool] = useState<"pencil" | "rectangle" | "circle" | "line" | "eraser">("pencil");
+  const { roomId } = useParams<{ roomId: string }>();
   const [shapes, setShapes] = useState<Shape[]>([]);
-  const socketRef = useRef<WebSocket | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [currentPoints, setCurrentPoints] = useState<{ x: number; y: number }[]>([]);
+  
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCurrentPoints([{ x: e.clientX - rect.left, y: e.clientY - rect.top }]);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    setCurrentPoints((prev) => [...prev, point]);
+  };
+
+  const handleMouseUp = () => {
+    if (!isDrawing || currentPoints.length === 0) return;
+    const newShape: Shape = {
+      id: crypto.randomUUID(),
+      type: "pencil",
+      x: 0,
+      y: 0,
+      points: currentPoints,
+    };
+    setShapes((prev) => [...prev, newShape]);
+    broadcastShape(newShape);
+    setIsDrawing(false);
+    setCurrentPoints([]);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touch = e.touches[0];
+    setCurrentPoints([{ x: touch.clientX - rect.left, y: touch.clientY - rect.top }]);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touch = e.touches[0];
+    const point = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+    setCurrentPoints((prev) => [...prev, point]);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDrawing || currentPoints.length === 0) return;
+    const newShape: Shape = {
+      id: crypto.randomUUID(),
+      type: "pencil",
+      x: 0,
+      y: 0,
+      points: currentPoints,
+    };
+    setShapes((prev) => [...prev, newShape]);
+    broadcastShape(newShape);
+    setIsDrawing(false);
+    setCurrentPoints([]);
+  };
+  const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-
-    socketRef.current = new WebSocket(`https://draw-xgjp.onrender.com?roomId=${roomId}&token=${token}`);
-
-    socketRef.current.onopen = () => {
-      console.log("WebSocket connection opened");
-    };
-
-    socketRef.current.onmessage = (event) => {
+    const socket = new WebSocket(`wss://excelidraw-ncsy.onrender.com/?roomId=${roomId}`);
+    ws.current = socket;
+    socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-
-      if (data.type === "load_previous_shapes") {
-        setShapes(data.shapes);
-      }
-
-      if (data.type === "draw_shape") {
+      if (data.type === "shape") {
         setShapes((prev) => [...prev, data.shape]);
+      } else if (data.type === "delete") {
+        setShapes((prev) => prev.filter((s) => s.id !== data.id));
       }
-
-      if (data.type === "delete_shape") {
-        setShapes((prev) => prev.filter((shape) => shape.id !== data.shapeId));
-      }
-    };
-
-    socketRef.current.onclose = () => {
-      console.log("WebSocket connection closed");
     };
 
     return () => {
-      socketRef.current?.close();
+      socket.close();
     };
   }, [roomId]);
 
-  const broadcastShape = (shape: Shape) => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(
-        JSON.stringify({
-          type: "draw_shape",
-          shape,
-          roomId,
-        })
-      );
-    } else {
-      console.warn("WebSocket not connected");
-    }
-  };
-
-  const broadcastDelete = (id: string) => {
-    if (socketRef.current?.readyState === WebSocket.OPEN) {
-      socketRef.current.send(
-        JSON.stringify({
-          type: "delete_shape",
-          shapeId: id,
-          roomId,
-        })
-      );
-    } else {
-      console.warn("WebSocket not connected");
-    }
-  };
-
   return (
-    <div>
-      <div className="h-screen w-screen flex flex-col items-center bg-black">
-
-        <div 
-          className="mt-5 h-[4rem] w-[50rem] border-2 rounded-xl bg-stone-900 flex items-center justify-items-start px-4 z-50" 
-          style={{ display: "flex", gap: "10px" }}
+  <div className="h-screen w-screen bg-black">
+    <CanvasLayer 
+      shapes={shapes}
+      broadcastShape={broadcastShape}
+      broadcastDelete={broadcastDelete}
+    />
+    
+    <div className="relative z-10 flex flex-col items-center">
+      <div 
+        className="mt-5 h-[4rem] w-[50rem] border-2 rounded-xl bg-stone-900 flex items-center justify-start px-4" 
+        style={{ display: "flex", gap: "10px" }}
+      >
+        <button 
+          className={`text-white select-none ${
+            selectedTool === "pencil" ? "bg-blue-700" : "bg-gray-800"
+          } px-4 py-2 mx-2 rounded`} 
+          onClick={() => setSelectedTool("pencil")}
         >
-          <button 
-            className={`text-white select-none ${
-              selectedTool === "pencil" ? "bg-blue-700" : "bg-gray-800"
-            } px-4 py-2 mx-2 rounded`} 
-            onClick={() => setSelectedTool("pencil")}
-          >
-            Pencil
-          </button>
-          <button 
-            className={`text-white select-none ${
-              selectedTool === "rectangle" ? "bg-blue-700" : "bg-gray-800"
-            } px-4 py-2 mx-2 rounded`} 
-            onClick={() => setSelectedTool("rectangle")}
-          >
-            Rectangle
-          </button>
-          <button 
-            className={`text-white select-none ${
-              selectedTool === "circle" ? "bg-blue-700" : "bg-gray-800"
-            } px-4 py-2 mx-2 rounded`} 
-            onClick={() => setSelectedTool("circle")}
-          >
-            Circle
-          </button>
-          <button 
-            className={`text-white select-none ${
-              selectedTool === "line" ? "bg-blue-700" : "bg-gray-800"
-            } px-4 py-2 mx-2 rounded`} 
-            onClick={() => setSelectedTool("line")}
-          >
-            Line
-          </button>
-          <button 
-            className={`text-white select-none ${
-              selectedTool === "eraser" ? "bg-blue-700" : "bg-gray-800"
-            } px-4 py-2 mx-2 rounded`} 
-            onClick={() => setSelectedTool("eraser")}
-          >
-            Eraser
-          </button>
-        </div>
+          Pencil
+        </button>
+        <button 
+          className={`text-white select-none ${
+            selectedTool === "rectangle" ? "bg-blue-700" : "bg-gray-800"
+          } px-4 py-2 mx-2 rounded`} 
+          onClick={() => setSelectedTool("rectangle")}
+        >
+          Rectangle
+        </button>
+        <button 
+          className={`text-white select-none ${
+            selectedTool === "circle" ? "bg-blue-700" : "bg-gray-800"
+          } px-4 py-2 mx-2 rounded`} 
+          onClick={() => setSelectedTool("circle")}
+        >
+          Circle
+        </button>
+        <button 
+          className={`text-white select-none ${
+            selectedTool === "line" ? "bg-blue-700" : "bg-gray-800"
+          } px-4 py-2 mx-2 rounded`} 
+          onClick={() => setSelectedTool("line")}
+        >
+          Line
+        </button>
+        <button 
+          className={`text-white select-none ${
+            selectedTool === "eraser" ? "bg-blue-700" : "bg-gray-800"
+          } px-4 py-2 mx-2 rounded`} 
+          onClick={() => setSelectedTool("eraser")}
+        >
+          Eraser
+        </button>
       </div>
-
-      <CanvasLayer
-        shapes={shapes}
-        broadcastShape={broadcastShape}
-        broadcastDelete={broadcastDelete}
-      />
-
-      {selectedTool === "pencil" && (
-        <Pencil
-          broadcastShape={broadcastShape}
-          shapes={shapes}
-          setShapes={setShapes}
-        />
-      )}
-      {selectedTool === "rectangle" && (
-        <Rectangle
-          broadcastShape={broadcastShape}
-          shapes={shapes}
-          setShapes={setShapes}
-        />
-      )}
-      {selectedTool === "circle" && (
-        <Circle
-          broadcastShape={broadcastShape}
-          shapes={shapes}
-          setShapes={setShapes}
-        />
-      )}
-      {selectedTool === "line" && (
-        <Line
-          broadcastShape={broadcastShape}
-          shapes={shapes}
-          setShapes={setShapes}
-        />
-      )}
-      {selectedTool === "eraser" && (
-        <Eraser 
-          shapes={shapes} 
-          setShapes={setShapes} 
-          broadcastDelete={broadcastDelete} 
-        />
-      )}
     </div>
-  );
+
+    {selectedTool === "pencil" && (
+      <Pencil
+        broadcastShape={broadcastShape}
+        shapes={shapes}
+        setShapes={setShapes}
+      />
+    )}
+    {selectedTool === "rectangle" && (
+      <Rectangle
+        broadcastShape={broadcastShape}
+        shapes={shapes}
+        setShapes={setShapes}
+      />
+    )}
+    {selectedTool === "circle" && (
+      <CircleCanvas
+        broadcastShape={broadcastShape}
+        shapes={shapes}
+        setShapes={setShapes}
+      />
+    )}
+    {selectedTool === "line" && (
+      <Line
+        broadcastShape={broadcastShape}
+        shapes={shapes}
+        setShapes={setShapes}
+      />
+    )}
+    {selectedTool === "eraser" && (
+      <Eraser
+        shapes={shapes} 
+        setShapes={setShapes} 
+        broadcastDelete={broadcastDelete} 
+      />
+    )}
+  </div>
+);
 }

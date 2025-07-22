@@ -1,10 +1,13 @@
-import {type  Shape } from '../authentication/types';
-import { Socket } from 'socket.io-client';
+import { type Shape } from '../authentication/types';
 
-export const broadcastShape = (socket: any, shape: Shape) => {
-  socket.emit('shape', shape);
+export const broadcastShape = (ws: WebSocket, shape: Shape) => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'shape', shape }));
+  }
 };
 
-export const broadcastDelete = (socket: any, id: string) => {
-  socket.emit('delete-shape', { id });
+export const broadcastDelete = (ws: WebSocket, id: string) => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'delete', id }));
+  }
 };

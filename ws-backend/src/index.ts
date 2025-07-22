@@ -37,9 +37,27 @@ wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
   ws.on('message', (message: string) => {
     const data = JSON.parse(message);
     const { type } = data;
-
+  ws.on('message', (message: string) => {
+    const data = JSON.parse(message);
+    const { type } = data;
+    if (data.type === "join") {
+      ws.roomId = data.roomId;
+  
+      if (!rooms[data.roomId]) {
+        rooms[data.roomId] = [];
+      }
+  
+      rooms[data.roomId].forEach((client) => {
+        client.send(JSON.stringify({ type: "shape", shape: roomShapes[data.roomId] }));
+      });
+  
+      return;
+    }
+    // ... rest of the function
+  });
     if (type === 'shape') {
       roomShapes[roomId].push(data.shape);
+      
       rooms[roomId].forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
           client.send(JSON.stringify({ type: 'shape', shape: data.shape }));

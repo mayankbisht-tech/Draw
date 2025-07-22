@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import {type Shape } from '../../authentication/imp';
+import { type Shape } from '../../authentication/types';
 
 type Props = {
   shapes: Shape[];
@@ -10,17 +10,25 @@ type Props = {
 export default function CircleCanvas({ shapes, setShapes, broadcastShape }: Props) {
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
 
+  const getCoords = (e: MouseEvent | TouchEvent) => {
+    if ('touches' in e) {
+      const touch = e.touches[0] || e.changedTouches[0];
+      return { x: touch.clientX, y: touch.clientY };
+    } else {
+      return { x: e.clientX, y: e.clientY };
+    }
+  };
+
   useEffect(() => {
-    const handleMouseDown = (e: MouseEvent) => {
-      if (e.clientY < 64) return;
-      setStart({ x: e.clientX, y: e.clientY });
+    const handleStart = (e: MouseEvent | TouchEvent) => {
+      const { x, y } = getCoords(e);
+      if (y < 64) return;
+      setStart({ x, y });
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
+    const handleEnd = (e: MouseEvent | TouchEvent) => {
       if (!start) return;
-
-      const x2 = e.clientX;
-      const y2 = e.clientY;
+      const { x: x2, y: y2 } = getCoords(e);
 
       const dx = x2 - start.x;
       const dy = y2 - start.y;
@@ -39,16 +47,19 @@ export default function CircleCanvas({ shapes, setShapes, broadcastShape }: Prop
 
       setShapes((prev) => [...prev, newShape]);
       broadcastShape(newShape);
-
       setStart(null);
     };
 
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousedown', handleStart);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchstart', handleStart);
+    window.addEventListener('touchend', handleEnd);
 
     return () => {
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousedown', handleStart);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchstart', handleStart);
+      window.removeEventListener('touchend', handleEnd);
     };
   }, [start, setShapes, broadcastShape]);
 

@@ -1,3 +1,3 @@
-import socketIOClient from 'socket.io-client';
+import { WebSocketServer } from "ws";
 
-export const socket = socketIOClient('https://draw-xgjp.onrender.com'); 
+export const socket = new WebSocketServer({ port: 8080 }); 

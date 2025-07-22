@@ -8,25 +8,42 @@ type Props = {
   broadcastShape: (shape: Shape) => void;
 };
 
-export default function pencil({ shapes, setShapes, broadcastShape }: Props) {
+export default function Pencil({ shapes, setShapes, broadcastShape }: Props) {
   const isDrawing = useRef(false);
   const pointsRef = useRef<{ x: number; y: number }[]>([]);
 
+  // Handle both mouse and touch coordinates
+  const getPoint = (e: MouseEvent | TouchEvent): { x: number; y: number } => {
+    if ("touches" in e) {
+      const touch = e.touches[0] || e.changedTouches[0];
+      const target = touch.target as HTMLElement;
+      const rect = target.getBoundingClientRect();
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
+      };
+    } else {
+      return { x: e.offsetX, y: e.offsetY };
+    }
+  };
+
   useEffect(() => {
-    const handleMouseDown = (e: MouseEvent) => {
+    const handleStart = (e: MouseEvent | TouchEvent) => {
       isDrawing.current = true;
-      pointsRef.current = [{ x: e.offsetX, y: e.offsetY }];
+      const point = getPoint(e);
+      pointsRef.current = [point];
     };
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
       if (!isDrawing.current) return;
-      pointsRef.current.push({ x: e.offsetX, y: e.offsetY });
+      const point = getPoint(e);
+      pointsRef.current.push(point);
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       if (!isDrawing.current || pointsRef.current.length < 2) return;
 
-      const newpencilShape: Shape = {
+      const newShape: Shape = {
         id: uuidv4(),
         type: "pencil",
         x: 0,
@@ -34,21 +51,29 @@ export default function pencil({ shapes, setShapes, broadcastShape }: Props) {
         points: [...pointsRef.current],
       };
 
-      setShapes(prev => [...prev, newpencilShape]);
-      broadcastShape(newpencilShape);
-
+      setShapes(prev => [...prev, newShape]);
+      broadcastShape(newShape);
       pointsRef.current = [];
       isDrawing.current = false;
     };
 
-    window.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    // Mouse Events
+    window.addEventListener("mousedown", handleStart);
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+
+    // Touch Events
+    window.addEventListener("touchstart", handleStart);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
 
     return () => {
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousedown", handleStart);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchstart", handleStart);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
     };
   }, [setShapes, broadcastShape]);
 

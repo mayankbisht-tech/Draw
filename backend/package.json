@@ -11,6 +11,9 @@
   },
   "author": "",
   "license": "ISC",
+  "prisma": {
+    "schema": "../packages/db/prisma/schema.prisma"
+  },
   "dependencies": {
     "@prisma/client": "^5.17.0",
     "bcrypt": "^5.1.1",

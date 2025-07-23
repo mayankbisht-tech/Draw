@@ -31,31 +31,33 @@ wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
     roomShapes[roomId] = [];
   }
   rooms[roomId].push(ws);
-
-  ws.send(JSON.stringify({ type: 'init', shapes: roomShapes[roomId] }));
+  if(roomShapes[roomId].length >0) {
+    console.log(`Sending ${roomShapes[roomId].length} existing shape to new client in room ${roomId}`);
+    roomShapes[roomId].forEach(shape => {
+      ws.send(JSON.stringify({ type: 'shape', shape }));
+    });
+  }
 
   ws.on('message', (message: string) => {
-    const data = JSON.parse(message);
-    const { type } = data;
-  ws.on('message', (message: string) => {
+    try{
     const data = JSON.parse(message);
     const { type } = data;
     if (data.type === "join") {
-      ws.roomId = data.roomId;
-  
-      if (!rooms[data.roomId]) {
-        rooms[data.roomId] = [];
-      }
-  
-      rooms[data.roomId].forEach((client) => {
-        client.send(JSON.stringify({ type: "shape", shape: roomShapes[data.roomId] }));
-      });
-  
-      return;
+    (ws as any).roomId = data.roomId;
+
+    if (!rooms[data.roomId]) {
+      rooms[data.roomId] = [];
     }
-    // ... rest of the function
-  });
-    if (type === 'shape') {
+
+    rooms[data.roomId].forEach((shape) => {
+      ws.send(JSON.stringify({ type: "shape", shape }));
+    });
+
+    return;
+  }
+  if( type === 'init' ) {
+      roomShapes[roomId] = data.shapes;
+  } else if (type === 'shape') {
       roomShapes[roomId].push(data.shape);
       
       rooms[roomId].forEach(client => {
@@ -72,14 +74,18 @@ wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
         }
       });
     }
-  });
-
+  
+} catch (error) {
+    console.error('Error processing message:', error);
+}
   ws.on('close', () => {
     rooms[roomId] = rooms[roomId].filter(client => client !== ws);
   });
 });
 
+});
+
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`WebSocket server listening on port ${PORT}`);
-});
+})

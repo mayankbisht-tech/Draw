@@ -18,7 +18,25 @@ export default function Imp({ broadcastShape, broadcastDelete }: Props) {
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [currentPoints, setCurrentPoints] = useState<{ x: number; y: number }[]>([]);
-  
+  const ws = useRef<WebSocket | null>(null);
+
+  const sendShapeToServer = (shape: Shape) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ type: "shape", shape }));
+      setShapes((prev) => [...prev, shape]);
+    }else {
+      console.error("WebSocket is not open. Cannot send shape to server.");
+    }
+  }
+  const deleteShapeFromServer = (id: string) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ type: "delete", id }));
+      setShapes((prev) => prev.filter((s) => s.id !== id));
+    } else {
+      console.error("WebSocket is not open. Cannot delete shape from server.");
+    }
+  };
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     setIsDrawing(true);
     const rect = e.currentTarget.getBoundingClientRect();
@@ -76,7 +94,6 @@ export default function Imp({ broadcastShape, broadcastDelete }: Props) {
     setIsDrawing(false);
     setCurrentPoints([]);
   };
-  const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     const socket = new WebSocket(`wss://excelidraw-ncsy.onrender.com/?roomId=${roomId}`);

@@ -101,7 +101,7 @@ async function startServer() {
     console.log("Connected to PostgreSQL database.");
 
     server.listen(PORT, () => {
-      console.log(` running on http://localhost:${PORT}`);
+      console.log(` running on https://excelidraw-ncsy.onrender.com/:${PORT}`);
     });
   } catch (err) {
     console.error(" Failed to start server:", err);

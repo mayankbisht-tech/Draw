@@ -49,7 +49,6 @@ export default function Signup({ setToken }: SignupProps) {
   return (
     <div className="relative flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-700 via-zinc-800 to-stone-900">
       
-      {/* Home Button outside the form box */}
       <button
         onClick={() => navigate("/")}
         className="absolute top-4 right-4 bg-zinc-600 hover:bg-zinc-700 text-white text-sm px-4 py-2 rounded-md"
@@ -57,7 +56,6 @@ export default function Signup({ setToken }: SignupProps) {
         Home
       </button>
 
-      {/* Form Box */}
       <div className="w-full max-w-md p-8 rounded-2xl bg-zinc-900/80 border border-zinc-700 shadow-xl">
         <div className="flex flex-col items-center space-y-4">
           <p className="font-bold text-2xl text-white">Sign Up</p>

@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import Imp from "./authentication/imp";
 import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
 import Dashboard from "./authentication/dashboard/Dashboard";
-import type { Shape } from "./authentication/types";
 
 function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -19,22 +18,20 @@ function App() {
   return (
     <div>
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/signin" element={<Signin setToken={setToken} />} />
-        <Route path="/signup" element={<Signup setToken={setToken} />} />
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/signin" element={<Signin setToken={setToken} />} />
+          <Route path="/signup" element={<Signup setToken={setToken} />} />
 
-        <Route path="/draw/:roomId" element={token ? <Imp broadcastShape={(shape: Shape) => {
-    console.log("Broadcast shape:", shape);
-  }}
-  broadcastDelete={(id: string) => {
-    console.log("Broadcast delete:", id);
-  }}  /> : <Navigate to="/signin" />} />
+          <Route 
+            path="/draw/:roomId" 
+            element={token ? <Imp /> : <Navigate to="/signin" />} 
+          />
 
-        <Route path="/room" element={<Room />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-</BrowserRouter>
+          <Route path="/room" element={<Room />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }

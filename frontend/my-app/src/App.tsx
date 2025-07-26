@@ -16,7 +16,8 @@ function App() {
   }, []);
 
   return (
-    <div>
+ 
+      
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -32,8 +33,8 @@ function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
-    </div>
-  );
-}
+    
+  
+)}
 
 export default App;

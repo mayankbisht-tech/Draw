@@ -13,6 +13,10 @@ import { prisma } from "../../packages/db/src";
 
 const app = express();
 const server = http.createServer(app);
+const corsOptions = {
+  origin: "https://draw-three-lovat.vercel.app"
+};
+app.use(cors(corsOptions));
 
 const wss = new WebSocketServer({ noServer: true });
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key';

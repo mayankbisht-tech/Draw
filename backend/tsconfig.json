@@ -2,11 +2,11 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "../",
+    "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
     "paths": {
-      "@db": ["../packages/db/src/index"]
+      "@db": ["../../packages/db/src/index"]
     },
     "esModuleInterop": true,
     "moduleResolution": "node",

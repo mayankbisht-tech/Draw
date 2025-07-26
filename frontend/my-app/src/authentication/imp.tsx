@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
@@ -85,8 +86,12 @@ export default function Imp() {
   useEffect(() => {
     if (!roomId) return;
     const token = localStorage.getItem('token');
+
     const connectWebSocket = () => {
-      const socket = new WebSocket(`ws://localhost:3000/?roomId=${roomId}${token ? `&token=${token}` : ''}`);
+ const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const wsUrl = backendUrl.replace(/^https?:\/\//, 'wss://');
+
+  const socket = new WebSocket(`${wsUrl}/?roomId=${roomId}${token ? `&token=${token}` : ''}`);
       ws.current = socket;
       socket.onopen = () => setWsConnected(true);
       socket.onclose = () => setWsConnected(false);

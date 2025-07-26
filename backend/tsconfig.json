@@ -2,17 +2,18 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "commonjs",
-    "outDir": "dist",
-    "rootDir": ".",
-    "strict": true,
+    "outDir": "./dist",
+    "rootDir": "../",                             
+    "baseUrl": ".",                               
     "paths": {
-      "@db": ["../../packages/db/src/index"]
+      "@db": ["../packages/db/src/index"]
     },
     "esModuleInterop": true,
     "moduleResolution": "node",
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "include": ["../packages/db/src", "src"],       
+  "exclude": ["node_modules", "dist"]
 }

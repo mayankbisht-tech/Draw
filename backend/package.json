@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "The backend server for the Excelidraw application.",
   "main": "dist/index.js",
-  "scripts": {
+  
+"scripts": {
   "postinstall": "prisma generate",
   "build": "tsc",
-  "start": "node dist/backend/src/index.js",
+  "start": "node -r tsconfig-paths/register dist/backend/src/index.js",
   "dev": "nodemon src/index.ts"
 },
   "author": "",
@@ -23,6 +24,7 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "prisma": "^6.12.0",
+    "tsconfig-paths": "^4.2.0",
     "uuid": "^11.1.0",
     "ws": "^8.18.0"
   },

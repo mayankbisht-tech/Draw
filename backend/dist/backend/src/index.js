@@ -22,7 +22,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const uuid_1 = require("uuid");
 const auth_1 = __importDefault(require("./router/auth"));
 const room_1 = __importDefault(require("./router/room"));
-const index_1 = require("../../packages/db/src/index");
+const _db_1 = require("@db");
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 const wss = new ws_1.WebSocketServer({ noServer: true });
@@ -117,7 +117,7 @@ wss.on('connection', (ws, req) => __awaiter(void 0, void 0, void 0, function* ()
         (_a = onlineUsersMap.get(roomId)) === null || _a === void 0 ? void 0 : _a.add(extendedWs);
         broadcastOnlineUsersInRoom(roomId);
         try {
-            const roomFromDb = yield index_1.prisma.room.findUnique({
+            const roomFromDb = yield _db_1.prisma.room.findUnique({
                 where: { roomId },
                 include: { shapes: true },
             });
@@ -151,7 +151,7 @@ const PORT = 3000;
 function startServer() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield index_1.prisma.$connect();
+            yield _db_1.prisma.$connect();
             console.log("Connected to PostgreSQL database.");
             server.listen(PORT, () => {
                 console.log(`Server running on http://localhost:${PORT}`);

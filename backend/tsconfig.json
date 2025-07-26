@@ -1,19 +1,22 @@
+// backend/tsconfig.json
+
 {
   "compilerOptions": {
-    "target": "ES6",
+    "target": "es2016",
     "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "../",                             
-    "baseUrl": ".",                               
+    "rootDir": "..",                     // Look for source files starting from the project root
+    "baseUrl": "..",                     // Set the base for path aliases to the project root
     "paths": {
-      "@db": ["../packages/db/src/index"]
+      "@db": ["packages/db/src"]     // Define the "@db" alias
     },
+    "outDir": "./dist",                  // Output compiled files to the backend's dist folder
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "skipLibCheck": true
   },
-  "include": ["../packages/db/src", "src"],       
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*",                        // Include all files from the backend's src
+    "../packages/db/src/**/*"          // IMPORTANT: Also include the shared db package
+  ]
 }

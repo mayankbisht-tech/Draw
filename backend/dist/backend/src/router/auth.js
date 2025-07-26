@@ -15,16 +15,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
-const index_1 = require("../../../packages/db/src/index");
+const _db_1 = require("@db");
 const router = express_1.default.Router();
 router.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { firstname, lastname, email, password } = req.body;
     try {
-        const existingUser = yield index_1.prisma.user.findUnique({ where: { email } });
+        const existingUser = yield _db_1.prisma.user.findUnique({ where: { email } });
         if (existingUser)
             return res.status(400).json({ error: "User already exists" });
         const hashedPassword = yield bcrypt_1.default.hash(password, 10);
-        const user = yield index_1.prisma.user.create({
+        const user = yield _db_1.prisma.user.create({
             data: {
                 firstname,
                 lastname,
@@ -46,7 +46,7 @@ router.post("/register", (req, res) => __awaiter(void 0, void 0, void 0, functio
 router.post("/login", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
     try {
-        const user = yield index_1.prisma.user.findUnique({ where: { email } });
+        const user = yield _db_1.prisma.user.findUnique({ where: { email } });
         if (!user)
             return res.status(404).json({ error: "User not found" });
         const match = yield bcrypt_1.default.compare(password, user.password);

@@ -25,11 +25,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const ws_1 = require("ws");
-const index_1 = require("../../../packages/db/src/index");
+const _db_1 = require("@db");
 const router = express_1.default.Router();
 router.get("/:roomId", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const room = yield index_1.prisma.room.findUnique({
+        const room = yield _db_1.prisma.room.findUnique({
             where: { roomId: req.params.roomId },
             include: { shapes: true },
         });
@@ -51,14 +51,14 @@ router.post("/:roomId", (req, res) => __awaiter(void 0, void 0, void 0, function
         return res.status(400).json({ message: "Invalid shape data. 'id' and 'type' are required." });
     }
     try {
-        const room = yield index_1.prisma.room.upsert({
+        const room = yield _db_1.prisma.room.upsert({
             where: { roomId: roomId },
             update: {},
             create: { roomId: roomId },
             select: { id: true },
         });
         const { id: shapeId, type } = shapeData, props = __rest(shapeData, ["id", "type"]);
-        yield index_1.prisma.shape.upsert({
+        yield _db_1.prisma.shape.upsert({
             where: { id: shapeId },
             update: { type: type, props: props },
             create: { id: shapeId, type: type, props: props, roomId: room.id },

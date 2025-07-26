@@ -2,6 +2,8 @@
   "dependencies": {
     "@prisma/client": "^6.12.0"
   },
+  "start": "node backend/dist/index.js",
+  "build": "tsc",
   "devDependencies": {
     "prisma": "^6.12.0",
     "typescript": "^5.8.3"

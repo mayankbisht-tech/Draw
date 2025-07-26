@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { WebSocket, WebSocketServer } from "ws";
-import { prisma } from "@db";
+import { prisma } from "../../../packages/db/src"; 
 
 interface ExtendedWebSocket extends WebSocket {
   roomId: string;

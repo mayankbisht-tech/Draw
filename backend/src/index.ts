@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import authRouter from "./router/auth";
 import roomRouter from "./router/room";
-import { prisma } from "@db";
+import { prisma } from "../../packages/db/src"; 
 
 const app = express();
 const server = http.createServer(app);

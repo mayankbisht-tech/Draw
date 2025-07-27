@@ -3,7 +3,7 @@ import express from 'express';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
-import { URL } from 'url';
+import { URL, parse } from 'url'; 
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,10 +13,18 @@ import { prisma } from "../../packages/db/src";
 
 const app = express();
 const server = http.createServer(app);
-const corsOptions = {
-  origin: "https://draw-nwlkjnz2k-mayankbisht-techs-projects.vercel.app" 
-};
-app.use(cors(corsOptions));
+
+app.use(cors({
+  origin: [
+    'http://localhost:5173', 
+    'https://excelidraw-ncsy.onrender.com', 
+    'https://draw-three-lovat.vercel.app', 
+    'https://draw-nwlkjnz2k-mayankbisht-techs-projects.vercel.app' 
+  ], 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true 
+}));
 
 const wss = new WebSocketServer({ noServer: true });
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
@@ -29,22 +37,15 @@ interface ExtendedWebSocket extends WebSocket {
 }
 
 const onlineUsersMap = new Map<string, Set<ExtendedWebSocket>>();
-app.use(cors({
-  origin: [
-    'http://localhost:5173', 
-    'https://excelidraw-ncsy.onrender.com', 
-    'https://draw-three-lovat.vercel.app', // Keep old Vercel URL for compatibility, if needed
-    'https://draw-nwlkjnz2k-mayankbisht-techs-projects.vercel.app' // Added the new Vercel frontend URL
-  ], 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+
 app.use(express.json());
 
 app.set('wss', wss);
 app.set('onlineUsersMap', onlineUsersMap);
+
 app.use("/api/auth", authRouter);
 app.use("/api/room", roomRouter);
+
 
 function broadcastOnlineUsersInRoom(roomId: string) {
   const clientsInRoom = onlineUsersMap.get(roomId);
@@ -80,10 +81,11 @@ function broadcastToRoom(roomId: string, message: string, excludeSender: Extende
 }
 
 server.on('upgrade', (request, socket, head) => {
-  const url = new URL(request.url || "", `http://${request.headers.host}`);
-  const roomId = url.searchParams.get('roomId');
+  const parsedUrl = parse(request.url || '', true); 
+  const roomId = parsedUrl.query.roomId; 
 
   if (!roomId) {
+    console.error(`WebSocket upgrade failed: Room ID is missing or invalid. Request URL: ${request.url}`);
     socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
     socket.destroy();
     return;
@@ -97,21 +99,21 @@ wss.on('connection', async (ws: WebSocket, req) => {
   const extendedWs = ws as ExtendedWebSocket;
 
   try {
-    const url = new URL(req.url || "", `http://${req.headers.host}`);
-    const roomId = url.searchParams.get('roomId');
-    const token = url.searchParams.get('token');
-
+    const parsedUrl = parse(req.url || '', true);
+    const roomId = parsedUrl.query.roomId;
+    const token = parsedUrl.query.token;
     if (!roomId) {
       extendedWs.close(1008, "Room ID is required");
       return;
     }
 
-    extendedWs.roomId = roomId;
+    extendedWs.roomId = Array.isArray(roomId) ? roomId[0] : roomId as string; 
     extendedWs.userId = uuidv4();
 
     if (token) {
       try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { firstname: string, lastname?: string, id: string };
+        const tokenString = Array.isArray(token) ? token[0] : token;
+        const decoded = jwt.verify(tokenString, JWT_SECRET) as { firstname: string, lastname?: string, id: string };
         extendedWs.firstname = decoded.firstname;
         extendedWs.lastname = decoded.lastname;
         extendedWs.userId = decoded.id;
@@ -129,15 +131,15 @@ wss.on('connection', async (ws: WebSocket, req) => {
         userId: extendedWs.userId
     }));
 
-    if (!onlineUsersMap.has(roomId)) {
-      onlineUsersMap.set(roomId, new Set());
+    if (!onlineUsersMap.has(extendedWs.roomId)) { 
+      onlineUsersMap.set(extendedWs.roomId, new Set()); 
     }
-    onlineUsersMap.get(roomId)?.add(extendedWs);
-    broadcastOnlineUsersInRoom(roomId);
+    onlineUsersMap.get(extendedWs.roomId)?.add(extendedWs); 
+    broadcastOnlineUsersInRoom(extendedWs.roomId);
 
     try {
       const roomFromDb = await prisma.room.findUnique({
-        where: { roomId },
+        where: { roomId: extendedWs.roomId }, 
         include: { shapes: true },
       });
       if (roomFromDb && roomFromDb.shapes.length > 0) {
@@ -149,7 +151,7 @@ wss.on('connection', async (ws: WebSocket, req) => {
         extendedWs.send(JSON.stringify({ type: 'init', shapes: normalizedShapes }));
       }
     } catch (dbError) {
-      console.error(`Failed to fetch initial shapes for room ${roomId}:`, dbError);
+      console.error(`Failed to fetch initial shapes for room ${extendedWs.roomId}:`, dbError); 
     }
 
     extendedWs.on('message', function incoming(message: string) {

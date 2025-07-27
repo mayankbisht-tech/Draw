@@ -20,7 +20,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const wss = new WebSocketServer({ noServer: true });
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
+const JWT_SECRET = process.env.JWT_SECRET || '';
 
 interface ExtendedWebSocket extends WebSocket {
   roomId: string;
@@ -30,7 +30,6 @@ interface ExtendedWebSocket extends WebSocket {
 }
 
 const onlineUsersMap = new Map<string, Set<ExtendedWebSocket>>();
-
 app.use(cors({
   origin: ['http://localhost:5173', 'https://excelidraw-ncsy.onrender.com', 'https://draw-three-lovat.vercel.app'], // Ensure Vercel frontend is included here too
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -43,10 +42,8 @@ app.set('onlineUsersMap', onlineUsersMap);
 
 app.use("/api/auth", authRouter);
 app.use("/api/room", roomRouter);
-
-const frontendPath = path.join(__dirname, '..', 'client', 'dist');
+const frontendPath = path.join(__dirname, '..', '..', '..', '..', 'client', 'dist'); 
 app.use(express.static(frontendPath));
-
 app.get('*', (req, res) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });

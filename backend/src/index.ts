@@ -6,7 +6,6 @@ import cors from 'cors';
 import { URL } from 'url';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import path from 'path'; 
 
 import authRouter from "./router/auth";
 import roomRouter from "./router/room";
@@ -20,7 +19,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const wss = new WebSocketServer({ noServer: true });
-const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
 
 interface ExtendedWebSocket extends WebSocket {
   roomId: string;
@@ -42,11 +41,7 @@ app.set('onlineUsersMap', onlineUsersMap);
 
 app.use("/api/auth", authRouter);
 app.use("/api/room", roomRouter);
-const frontendPath = path.join(__dirname, '..', '..', '..', '..', 'client', 'dist'); 
-app.use(express.static(frontendPath));
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
+
 
 
 function broadcastOnlineUsersInRoom(roomId: string) {

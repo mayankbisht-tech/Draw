@@ -37,7 +37,7 @@ router.get("/:roomId", async (req: Request<{ roomId: string }>, res: Response) =
 
 router.post("/:roomId", async (req: Request<{ roomId: string }>, res: Response) => {
   const { roomId } = req.params;
-  const shapeData = req.body;
+  const shapeData = req.body; 
   if (!shapeData || !shapeData.id || !shapeData.type) {
     return res.status(400).json({ message: "Invalid shape data. 'id' and 'type' are required." });
   }
@@ -46,13 +46,18 @@ router.post("/:roomId", async (req: Request<{ roomId: string }>, res: Response) 
     const room = await prisma.room.upsert({
       where: { roomId: roomId },
       update: {}, 
-      create: { roomId: roomId },
-      select: { id: true }, 
+      create: { roomId: roomId }, 
+      select: { id: true },
     });
 
     const { id: shapeId, type, ...props } = shapeData;
 
     const stringifiedProps = JSON.stringify(props);
+
+    console.log(`[Room Router POST] Processing shape for Room ID: ${roomId}`);
+    console.log(`[Room Router POST] Received shapeData: ${JSON.stringify(shapeData)}`);
+    console.log(`[Room Router POST] Extracted shapeId: ${shapeId}, type: ${type}`);
+    console.log(`[Room Router POST] Stringified props: ${stringifiedProps}`);
 
     await prisma.shape.upsert({
       where: { id: shapeId }, 
@@ -61,7 +66,7 @@ router.post("/:roomId", async (req: Request<{ roomId: string }>, res: Response) 
         id: shapeId, 
         type: type, 
         props: stringifiedProps, 
-        roomId: room.id 
+        roomId: room.id
       },
     });
 
@@ -71,10 +76,11 @@ router.post("/:roomId", async (req: Request<{ roomId: string }>, res: Response) 
     const clientsInRoom = onlineUsersMap.get(roomId);
     if (clientsInRoom) {
       const broadcastMessage = JSON.stringify({
-        type: 'shape', 
-        shape: shapeData, 
+        type: 'shape',
+        shape: shapeData,
       });
       clientsInRoom.forEach((client: ExtendedWebSocket) => {
+        // Ensure the client is open before sending
         if (client.readyState === WebSocket.OPEN) {
           client.send(broadcastMessage);
         }

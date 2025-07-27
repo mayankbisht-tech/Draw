@@ -14,7 +14,7 @@ import { prisma } from "../../packages/db/src";
 const app = express();
 const server = http.createServer(app);
 const corsOptions = {
-  origin: "https://draw-three-lovat.vercel.app"
+  origin: "https://draw-nwlkjnz2k-mayankbisht-techs-projects.vercel.app" 
 };
 app.use(cors(corsOptions));
 
@@ -30,7 +30,12 @@ interface ExtendedWebSocket extends WebSocket {
 
 const onlineUsersMap = new Map<string, Set<ExtendedWebSocket>>();
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://excelidraw-ncsy.onrender.com', 'https://draw-three-lovat.vercel.app'], // Ensure Vercel frontend is included here too
+  origin: [
+    'http://localhost:5173', 
+    'https://excelidraw-ncsy.onrender.com', 
+    'https://draw-three-lovat.vercel.app', // Keep old Vercel URL for compatibility, if needed
+    'https://draw-nwlkjnz2k-mayankbisht-techs-projects.vercel.app' // Added the new Vercel frontend URL
+  ], 
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -38,11 +43,8 @@ app.use(express.json());
 
 app.set('wss', wss);
 app.set('onlineUsersMap', onlineUsersMap);
-
 app.use("/api/auth", authRouter);
 app.use("/api/room", roomRouter);
-
-
 
 function broadcastOnlineUsersInRoom(roomId: string) {
   const clientsInRoom = onlineUsersMap.get(roomId);

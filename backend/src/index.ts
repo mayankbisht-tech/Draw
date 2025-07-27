@@ -6,6 +6,7 @@ import cors from 'cors';
 import { URL } from 'url';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import path from 'path'; 
 
 import authRouter from "./router/auth";
 import roomRouter from "./router/room";
@@ -31,7 +32,7 @@ interface ExtendedWebSocket extends WebSocket {
 const onlineUsersMap = new Map<string, Set<ExtendedWebSocket>>();
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://excelidraw-ncsy.onrender.com'],
+  origin: ['http://localhost:5173', 'https://excelidraw-ncsy.onrender.com', 'https://draw-three-lovat.vercel.app'], // Ensure Vercel frontend is included here too
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -42,6 +43,14 @@ app.set('onlineUsersMap', onlineUsersMap);
 
 app.use("/api/auth", authRouter);
 app.use("/api/room", roomRouter);
+
+const frontendPath = path.join(__dirname, '..', 'client', 'dist');
+app.use(express.static(frontendPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
 
 function broadcastOnlineUsersInRoom(roomId: string) {
   const clientsInRoom = onlineUsersMap.get(roomId);

@@ -131,7 +131,7 @@ export default function Imp() {
       ctx.strokeStyle = shape.id === selectedShapeId ? "cyan" : "white";
       ctx.lineWidth = 2;
       try {
-        if (shape.type === 'pencil' && shape.points && shape.points.length > 0) {
+ if (shape.type === 'pencil' && shape.points && shape.points.length > 0) {
   ctx.beginPath();
   ctx.moveTo(shape.points[0].x, shape.points[0].y); 
   for (let i = 1; i < shape.points.length; i++) {

@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
-import { prisma } from "../../../packages/db/src"; // Ensure this path is correct
+import { Prisma } from "@prisma/client";
+import { prisma } from "../../../packages/db/src";
 
 const router = express.Router();
 
@@ -39,11 +40,10 @@ router.post("/:roomId", async (req: Request<{ roomId: string }>, res: Response) 
             where: { roomId: roomId },
             update: {},
             create: { roomId: roomId },
-            select: { id: true }, 
+            select: { id: true },
         });
 
         const { id: shapeId, type, ...props } = shapeData;
-
         const stringifiedProps = JSON.stringify(props);
 
         await prisma.shape.upsert({
@@ -56,7 +56,7 @@ router.post("/:roomId", async (req: Request<{ roomId: string }>, res: Response) 
                 roomId: room.id
             },
         });
-        
+
         return res.status(200).json({ success: true, shape: shapeData });
     } catch (err) {
         console.error("Failed to save shape:", err);
@@ -71,14 +71,14 @@ router.delete("/shape/:shapeId", async (req: Request<{ shapeId: string }>, res: 
             where: { id: shapeId },
         });
         res.status(204).send();
+
     } catch (err) {
         console.error("Failed to delete shape:", err);
-        if (err instanceof prisma.Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+        if (err instanceof (Prisma as any).PrismaClientKnownRequestError && (err as any).code === 'P2025') {
             return res.status(404).json({ error: "Shape not found." });
         }
         res.status(500).json({ error: "Server error while deleting shape" });
     }
 });
-
 
 export default router;

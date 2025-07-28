@@ -131,7 +131,14 @@ export default function Imp() {
       ctx.strokeStyle = shape.id === selectedShapeId ? "cyan" : "white";
       ctx.lineWidth = 2;
       try {
-        if (shape.type === 'pencil' && shape.points) { ctx.beginPath(); ctx.moveTo(shape.points[0].x, shape.points[0].y); for (let i = 1; i < shape.points.length; i++) ctx.lineTo(shape.points[i].x, shape.points[i].y); ctx.stroke(); }
+        if (shape.type === 'pencil' && shape.points && shape.points.length > 0) {
+  ctx.beginPath();
+  ctx.moveTo(shape.points[0].x, shape.points[0].y); 
+  for (let i = 1; i < shape.points.length; i++) {
+    ctx.lineTo(shape.points[i].x, shape.points[i].y);
+  }
+  ctx.stroke();
+}
         else if (shape.type === 'rectangle' && shape.width != null) { ctx.strokeRect(shape.x, shape.y, shape.width, shape.height); }
         else if (shape.type === 'circle' && shape.radius != null) { ctx.beginPath(); ctx.arc(shape.x, shape.y, Math.abs(shape.radius), 0, 2 * Math.PI); ctx.stroke(); }
         else if (shape.type === 'line' && shape.x2 != null) { ctx.beginPath(); ctx.moveTo(shape.x, shape.y); ctx.lineTo(shape.x2, shape.y2); ctx.stroke(); if (shape.id === selectedShapeId) { const r = 6 / (shape.scale || 1); ctx.fillStyle = "white"; ctx.beginPath(); ctx.arc(shape.x, shape.y, r, 0, 2 * Math.PI); ctx.fill(); ctx.beginPath(); ctx.arc(shape.x2, shape.y2, r, 0, 2 * Math.PI); ctx.fill(); } }
@@ -297,6 +304,7 @@ export default function Imp() {
       <Sidebar collapsed={collapsed} backgroundColor="black" rootStyles={{ borderColor: 'rgb(39 39 42)', height: '100vh', position: 'fixed', left: 0, top: 0, zIndex: 20, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
         <Menu 
             menuItemStyles={{
+              //@ts-ignore
                 button: ({ active, hover }: { active: boolean; hover: boolean }): React.CSSProperties => ({
                   backgroundColor: active || hover ? 'rgb(39 39 42)' : 'transparent',
                   color: active || hover ? 'white' : 'rgb(156 163 175)',

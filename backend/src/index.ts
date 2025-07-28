@@ -15,13 +15,7 @@ const app = express();
 const server = http.createServer(app);
 
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'https://excelidraw-ncsy.onrender.com',
-        'https://draw-three-lovat.vercel.app',
-        'https://draw-q9859k6s7-mayankbisht-techs-projects.vercel.app',
-        'https://draw-nwlkjnz2k-mayankbisht-techs-projects.vercel.app'
-    ],
+    origin: ['http://localhost:5173', 'https://excelidraw-ncsy.onrender.com', 'https://draw-three-lovat.vercel.app', 'https://draw-q9859k6s7-mayankbisht-techs-projects.vercel.app', 'https://draw-nwlkjnz2k-mayankbisht-techs-projects.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -31,57 +25,36 @@ const wss = new WebSocketServer({ noServer: true });
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_jwt_key';
 
 interface ExtendedWebSocket extends WebSocket {
-    roomId: string;
-    firstname?: string;
-    lastname?: string;
-    userId: string;
+    roomId: string; firstname?: string; lastname?: string; userId: string;
 }
 
 const onlineUsersMap = new Map<string, Set<ExtendedWebSocket>>();
 
 app.use(express.json());
-
 app.set('wss', wss);
 app.set('onlineUsersMap', onlineUsersMap);
-
 app.use("/api/auth", authRouter);
 app.use("/api/room", roomRouter);
 
 function broadcastOnlineUsersInRoom(roomId: string) {
     const clientsInRoom = onlineUsersMap.get(roomId);
     if (!clientsInRoom) return;
-
-    const usersList = Array.from(clientsInRoom).map(client => ({
-        firstname: client.firstname || 'Guest',
-        lastname: client.lastname || '',
-        userId: client.userId,
-    }));
-
-    const message = JSON.stringify({
-        type: 'online_users_update',
-        users: usersList,
-    });
-
-    clientsInRoom.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
-        }
-    });
+    const usersList = Array.from(clientsInRoom).map(client => ({ firstname: client.firstname || 'Guest', lastname: client.lastname || '', userId: client.userId }));
+    const message = JSON.stringify({ type: 'online_users_update', users: usersList });
+    clientsInRoom.forEach(client => { if (client.readyState === WebSocket.OPEN) client.send(message); });
 }
 
 function broadcastToRoom(roomId: string, message: string) {
     const clientsInRoom = onlineUsersMap.get(roomId);
     if (!clientsInRoom) return;
-
-    clientsInRoom.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
-        }
-    });
+    clientsInRoom.forEach(client => { if (client.readyState === WebSocket.OPEN) client.send(message); });
 }
 
 server.on('upgrade', (request, socket, head) => {
-    const parsedUrl = parse(request.url || '', true);
+    // ** THE DEFINITIVE BACKEND FIX **
+    // Sanitize the URL to remove any double slashes before parsing.
+    const sanitizedUrl = (request.url || '').replace(/\/\//g, '/');
+    const parsedUrl = parse(sanitizedUrl, true);
     const roomId = parsedUrl.query.roomId;
 
     if (!roomId || Array.isArray(roomId)) {
@@ -90,42 +63,33 @@ server.on('upgrade', (request, socket, head) => {
         return;
     }
     wss.handleUpgrade(request, socket, head, (ws) => {
+        request.url = sanitizedUrl; // Pass the corrected URL to the connection handler
         wss.emit('connection', ws, request);
     });
 });
 
 wss.on('connection', async (ws: WebSocket, req) => {
     const extendedWs = ws as ExtendedWebSocket;
-
     try {
         const parsedUrl = parse(req.url || '', true);
         const roomId = parsedUrl.query.roomId as string;
         const token = parsedUrl.query.token as string;
 
-        if (!roomId) {
-            extendedWs.close(1008, "Room ID is required");
-            return;
-        }
+        if (!roomId) { extendedWs.close(1008, "Room ID is required"); return; }
 
         extendedWs.roomId = roomId;
         extendedWs.userId = uuidv4();
+
         if (token) {
             try {
                 const decoded = jwt.verify(token, JWT_SECRET) as { firstname: string, lastname?: string, id: string };
                 extendedWs.firstname = decoded.firstname;
                 extendedWs.lastname = decoded.lastname;
                 extendedWs.userId = decoded.id;
-            } catch (jwtError) {
-                console.error("Invalid or expired token:", jwtError);
-            }
+            } catch (jwtError) { console.error("Invalid token:", jwtError); }
         }
 
-        extendedWs.send(JSON.stringify({
-            type: 'user_info',
-            firstname: extendedWs.firstname || 'Guest',
-            lastname: extendedWs.lastname || '',
-            userId: extendedWs.userId
-        }));
+        extendedWs.send(JSON.stringify({ type: 'user_info', firstname: extendedWs.firstname || 'Guest', lastname: extendedWs.lastname || '', userId: extendedWs.userId }));
 
         if (!onlineUsersMap.has(extendedWs.roomId)) {
             onlineUsersMap.set(extendedWs.roomId, new Set());
@@ -134,40 +98,15 @@ wss.on('connection', async (ws: WebSocket, req) => {
         broadcastOnlineUsersInRoom(extendedWs.roomId);
 
         try {
-            const roomFromDb = await prisma.room.findUnique({
-                where: { roomId: extendedWs.roomId },
-                include: { shapes: true },
-            });
+            const roomFromDb = await prisma.room.findUnique({ where: { roomId: extendedWs.roomId }, include: { shapes: true } });
             const shapes = roomFromDb?.shapes || [];
-            const normalizedShapes = shapes.map(shape => ({
-                id: shape.id,
-                type: shape.type,
-                ...shape.props as object
-            }));
+            const normalizedShapes = shapes.map(shape => ({ id: shape.id, type: shape.type, ...shape.props as object }));
             extendedWs.send(JSON.stringify({ type: 'init', shapes: normalizedShapes }));
+        } catch (dbError) { console.error(`Failed to fetch initial shapes for room ${extendedWs.roomId}:`, dbError); }
 
-        } catch (dbError) {
-            console.error(`Failed to fetch initial shapes for room ${extendedWs.roomId}:`, dbError);
-        }
-
-        extendedWs.on('message', (message: string) => {
-            broadcastToRoom(extendedWs.roomId, message);
-        });
-
-        extendedWs.on('close', () => {
-            const clients = onlineUsersMap.get(extendedWs.roomId);
-            if (clients) {
-                clients.delete(extendedWs);
-                if (clients.size === 0) {
-                    onlineUsersMap.delete(extendedWs.roomId);
-                }
-            }
-            broadcastOnlineUsersInRoom(extendedWs.roomId);
-        });
-
-        extendedWs.on('error', (error) => {
-            console.error(`WebSocket error in room ${extendedWs.roomId}:`, error);
-        });
+        extendedWs.on('message', (message: string) => { broadcastToRoom(extendedWs.roomId, message); });
+        extendedWs.on('close', () => { const clients = onlineUsersMap.get(extendedWs.roomId); if (clients) { clients.delete(extendedWs); if (clients.size === 0) onlineUsersMap.delete(extendedWs.roomId); } broadcastOnlineUsersInRoom(extendedWs.roomId); });
+        extendedWs.on('error', (error) => { console.error(`WebSocket error in room ${extendedWs.roomId}:`, error); });
 
     } catch (error) {
         console.error("Critical error during WebSocket connection setup:", error);
@@ -176,18 +115,14 @@ wss.on('connection', async (ws: WebSocket, req) => {
 });
 
 const PORT = process.env.PORT || 3000;
-
 async function startServer() {
     try {
         await prisma.$connect();
         console.log("Connected to PostgreSQL database.");
-        server.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
-        });
+        server.listen(PORT, () => { console.log(`Server running on http://localhost:${PORT}`); });
     } catch (err) {
         console.error("Failed to start server:", err);
         process.exit(1);
     }
 }
-
 startServer();

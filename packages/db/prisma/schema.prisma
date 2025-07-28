@@ -5,7 +5,7 @@ generator client {
 }
 datasource db {
   provider = "postgresql"
-  url      = env("backend_url")
+  url      = env("DB")
 }
 
 model User {

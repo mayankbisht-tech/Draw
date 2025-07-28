@@ -19,6 +19,7 @@ app.use(cors({
     'http://localhost:5173', 
     'https://excelidraw-ncsy.onrender.com', 
     'https://draw-three-lovat.vercel.app', 
+    'https://draw-q9859k6s7-mayankbisht-techs-projects.vercel.app',
     'https://draw-nwlkjnz2k-mayankbisht-techs-projects.vercel.app' 
   ], 
   methods: ['GET', 'POST', 'PUT', 'DELETE'],

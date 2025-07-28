@@ -1,11 +1,8 @@
-
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import { type Shape } from "../authentication/types";
-
 const degToRad = (degrees: number) => degrees * (Math.PI / 180);
-
 class Complex {
   re: number;
   im: number;
@@ -86,12 +83,8 @@ export default function Imp() {
   useEffect(() => {
     if (!roomId) return;
     const token = localStorage.getItem('token');
-
     const connectWebSocket = () => {
- const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      const wsUrl = backendUrl.replace(/^https?:\/\//, 'wss://');
-
-  const socket = new WebSocket(`${wsUrl}/?roomId=${roomId}${token ? `&token=${token}` : ''}`);
+      const socket = new WebSocket(`ws://localhost:3000/?roomId=${roomId}${token ? `&token=${token}` : ''}`);
       ws.current = socket;
       socket.onopen = () => setWsConnected(true);
       socket.onclose = () => setWsConnected(false);
@@ -142,8 +135,8 @@ export default function Imp() {
   }, [shapes, canvasDimensions, selectedShapeId]);
 
   useEffect(() => { const updateCanvasDimensions = () => { const sw = collapsed ? 80 : 256; setCanvasDimensions({ width: window.innerWidth - sw - 40, height: window.innerHeight - 80 - 40 }); }; updateCanvasDimensions(); window.addEventListener('resize', updateCanvasDimensions); return () => window.removeEventListener('resize', updateCanvasDimensions); }, [collapsed]);
-  const saveShapeToServer = useCallback(async (shape: Shape) => { if (!roomId) return; try { await fetch(`https://excelidraw-ncsy.onrender.com/api/room/${roomId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(shape) }); } catch (error) { console.error("Failed to save shape:", error); } }, [roomId]);
-  const deleteShapeFromServer = useCallback(async (shapeId: string) => { if (!shapeId) return; try { await fetch(`https://excelidraw-ncsy.onrender.com/api/shape/${shapeId}`, { method: 'DELETE' }); } catch (error) { console.error("Failed to delete shape from server:", error); } }, []);
+  const saveShapeToServer = useCallback(async (shape: Shape) => { if (!roomId) return; try { await fetch(`http://localhost:3000/api/room/${roomId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(shape) }); } catch (error) { console.error("Failed to save shape:", error); } }, [roomId]);
+  const deleteShapeFromServer = useCallback(async (shapeId: string) => { if (!shapeId) return; try { await fetch(`http://localhost:3000/api/shape/${shapeId}`, { method: 'DELETE' }); } catch (error) { console.error("Failed to delete shape from server:", error); } }, []);
   const broadcastData = useCallback((data: object) => { if (ws.current?.readyState === WebSocket.OPEN) { ws.current.send(JSON.stringify(data)); } }, []);
   const getCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => { const canvas = canvasRef.current!; const rect = canvas.getBoundingClientRect(); const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX; const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY; return { x: clientX - rect.left, y: clientY - rect.top }; };
 
@@ -297,6 +290,7 @@ export default function Imp() {
       <Sidebar collapsed={collapsed} backgroundColor="black" rootStyles={{ borderColor: 'rgb(39 39 42)', height: '100vh', position: 'fixed', left: 0, top: 0, zIndex: 20, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
         <Menu 
             menuItemStyles={{
+              //@ts-ignore
                 button: ({ active, hover }: { active: boolean; hover: boolean }): React.CSSProperties => ({
                   backgroundColor: active || hover ? 'rgb(39 39 42)' : 'transparent',
                   color: active || hover ? 'white' : 'rgb(156 163 175)',

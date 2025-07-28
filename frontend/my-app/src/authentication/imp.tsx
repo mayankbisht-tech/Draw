@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import { type Shape } from "../authentication/types";
 
 const degToRad = (degrees: number) => degrees * (Math.PI / 180);
+
 class Complex {
-    re: number;
-    im: number;
-    constructor(re: number, im: number) { this.re = re; this.im = im; }
+    re: number; im: number; constructor(re: number, im: number) { this.re = re; this.im = im; }
     add(other: Complex): Complex { return new Complex(this.re + other.re, this.im + other.im); }
     subtract(other: Complex): Complex { return new Complex(this.re - other.re, this.im - other.im); }
     multiply(other: Complex): Complex { return new Complex(this.re * other.re - this.im * other.im, this.re * other.re + this.im * other.re); }
@@ -15,17 +14,16 @@ class Complex {
     get magnitude(): number { return Math.sqrt(this.re * this.re + this.im * this.im); }
     get angle(): number { return Math.atan2(this.im, this.re); }
 }
+
 type Tool = "pencil" | "rectangle" | "circle" | "line" | "eraser" | "text";
+
 interface ChatMessage {
-    id: string;
-    senderId: string;
-    senderFirstName: string;
-    senderLastName: string;
-    text: string;
-    timestamp: number;
+    id: string; senderId: string; senderFirstName: string; senderLastName: string; text: string; timestamp: number;
 }
+
 const API_BASE_URL = "https://excelidraw-ncsy.onrender.com";
 const WS_BASE_URL = "wss://excelidraw-ncsy.onrender.com";
+
 const getShapeCenter = (shape: Shape): { x: number; y: number } => {
     let centerX = 'x' in shape ? shape.x : 0;
     let centerY = 'y' in shape ? shape.y : 0;
@@ -47,6 +45,7 @@ const getShapeCenter = (shape: Shape): { x: number; y: number } => {
     }
     return { x: centerX, y: centerY };
 };
+
 const getLocalMouseCoordinates = (coords: { x: number; y: number }, shape: Shape, ctx: CanvasRenderingContext2D) => {
     ctx.save();
     const { x: shapeCenterX, y: shapeCenterY } = getShapeCenter(shape);
@@ -60,7 +59,6 @@ const getLocalMouseCoordinates = (coords: { x: number; y: number }, shape: Shape
 };
 
 export default function Imp() {
-    const navigate = useNavigate();
     const [selectedTool, setSelectedTool] = useState<Tool>("pencil");
     const { roomId } = useParams<{ roomId: string }>();
     const [shapes, setShapes] = useState<Shape[]>([]);
@@ -95,20 +93,19 @@ export default function Imp() {
         if (!roomId) return;
         const token = localStorage.getItem('token');
         const connectWebSocket = () => {
-            const socket = new WebSocket(`${WS_BASE_URL}/?roomId=${roomId}${token ? `&token=${token}` : ''}`);
+            const wsUrl = new URL(WS_BASE_URL);
+            wsUrl.pathname = '/';
+            wsUrl.searchParams.set('roomId', roomId);
+            if (token) {
+                wsUrl.searchParams.set('token', token);
+            }
+
+            const socket = new WebSocket(wsUrl.toString());
             ws.current = socket;
-            socket.onopen = () => {
-                console.log("WebSocket connected.");
-                setWsConnected(true);
-            };
-            socket.onclose = () => {
-                console.log("WebSocket disconnected.");
-                setWsConnected(false);
-            };
-            socket.onerror = (error) => {
-                console.error("WebSocket error:", error);
-                setWsConnected(false);
-            };
+            socket.onopen = () => { console.log("WebSocket connected."); setWsConnected(true); };
+            socket.onclose = () => { console.log("WebSocket disconnected."); setWsConnected(false); };
+            socket.onerror = (error) => { console.error("WebSocket error:", error); setWsConnected(false); };
+
             socket.onmessage = async (event) => {
                 let messageData: string;
                 if (event.data instanceof Blob) { messageData = await event.data.text(); } else { messageData = event.data; }
@@ -116,24 +113,10 @@ export default function Imp() {
                     const data = JSON.parse(messageData);
                     switch (data.type) {
                         case 'init':
-                            setShapes((data.shapes || []).map((shape: any) => ({
-                                ...shape,
-                                offsetX: shape.offsetX ?? 0,
-                                offsetY: shape.offsetY ?? 0,
-                                rotation: shape.rotation ?? 0,
-                                scale: shape.scale ?? 1
-                            })));
+                            setShapes((data.shapes || []).map((shape: any) => ({ ...shape, offsetX: shape.offsetX ?? 0, offsetY: shape.offsetY ?? 0, rotation: shape.rotation ?? 0, scale: shape.scale ?? 1 })));
                             break;
                         case 'shape':
-                            setShapes((prev) => {
-                                const i = prev.findIndex(s => s.id === data.shape.id);
-                                if (i !== -1) {
-                                    const u = [...prev];
-                                    u[i] = { ...data.shape, offsetX: data.shape.offsetX ?? 0, offsetY: data.shape.offsetY ?? 0, rotation: data.shape.rotation ?? 0, scale: data.shape.scale ?? 1 };
-                                    return u;
-                                }
-                                return [...prev, { ...data.shape, offsetX: data.shape.offsetX ?? 0, offsetY: data.shape.offsetY ?? 0, rotation: data.shape.rotation ?? 0, scale: data.shape.scale ?? 1 }];
-                            });
+                            setShapes((prev) => { const i = prev.findIndex(s => s.id === data.shape.id); if (i !== -1) { const u = [...prev]; u[i] = { ...data.shape, offsetX: data.shape.offsetX ?? 0, offsetY: data.shape.offsetY ?? 0, rotation: data.shape.rotation ?? 0, scale: data.shape.scale ?? 1 }; return u; } return [...prev, { ...data.shape, offsetX: data.shape.offsetX ?? 0, offsetY: data.shape.offsetY ?? 0, rotation: data.shape.rotation ?? 0, scale: data.shape.scale ?? 1 }]; });
                             break;
                         case 'delete':
                             setShapes((prev) => prev.filter((s) => s.id !== data.id));
@@ -266,7 +249,6 @@ export default function Imp() {
         }
     }, []);
 
-    // No changes to getCoords or hitTest
     const getCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current!;
         const rect = canvas.getBoundingClientRect();
@@ -274,6 +256,7 @@ export default function Imp() {
         const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
         return { x: clientX - rect.left, y: clientY - rect.top };
     };
+
     const hitTest = useCallback((x: number, y: number, shape: Shape, ctx: CanvasRenderingContext2D): boolean => {
         if (!shape) return false;
         const localMouse = getLocalMouseCoordinates({ x, y }, shape, ctx);
@@ -288,10 +271,163 @@ export default function Imp() {
         }
     }, []);
 
-    const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => { e.preventDefault(); const coords = getCoords(e); const canvas = canvasRef.current; if (!canvas) return; const ctx = canvas.getContext("2d")!; const clickedShape = shapes.slice().reverse().find(shape => hitTest(coords.x, coords.y, shape, ctx)); if (clickedShape) { if (selectedTool === 'eraser') { setShapes(prev => prev.filter(s => s.id !== clickedShape.id)); broadcastData({ type: 'delete', id: clickedShape.id }); deleteShapeFromServer(clickedShape.id); return; } setSelectedShapeId(clickedShape.id); initialShapeStateRef.current = { ...clickedShape }; setIsTransforming(true); if ('touches' in e && e.touches.length === 2) { const t1 = e.touches[0]; const t2 = e.touches[1]; const distance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY); const angle = Math.atan2(t1.clientY - t2.clientY, t1.clientX - t2.clientX); initialGestureStateRef.current = { distance, angle }; } else { transformStartPointRef.current = coords; if (clickedShape.type === 'line' && clickedShape.x2 != null && clickedShape.y2 != null) { const localMouse = getLocalMouseCoordinates(coords, clickedShape, ctx); const handleRadius = 15 / (clickedShape.scale || 1); if (Math.hypot(localMouse.x - clickedShape.x, localMouse.y - clickedShape.y) < handleRadius) { setLineDragHandle('start'); } else if (Math.hypot(localMouse.x - clickedShape.x2, localMouse.y - clickedShape.y2) < handleRadius) { setLineDragHandle('end'); } else { setLineDragHandle('body'); } } } return; } setSelectedShapeId(null); if (selectedTool === 'eraser') return; if (selectedTool === 'text') { setIsTyping(true); setTextInputPosition({ x: coords.x + canvas.getBoundingClientRect().left, y: coords.y + canvas.getBoundingClientRect().top }); setTextInputValue(''); setCurrentDrawingShapeId(null); return; } setIsDrawing(true); startPointRef.current = coords; const newShapeId = generateId(); const defaultTransform = { offsetX: 0, offsetY: 0, rotation: 0, scale: 1 }; let newShape: Shape; switch (selectedTool) { case 'pencil': newShape = { id: newShapeId, type: 'pencil', points: [coords], x: coords.x, y: coords.y, ...defaultTransform }; break; case 'rectangle': newShape = { id: newShapeId, type: 'rectangle', x: coords.x, y: coords.y, width: 0, height: 0, ...defaultTransform }; break; case 'circle': newShape = { id: newShapeId, type: 'circle', x: coords.x, y: coords.y, radius: 0, ...defaultTransform }; break; case 'line': newShape = { id: newShapeId, type: 'line', x: coords.x, y: coords.y, x2: coords.x, y2: coords.y, ...defaultTransform }; break; default: return; } setCurrentDrawingShapeId(newShapeId); setShapes(prev => [...prev, newShape]); }, [selectedTool, shapes, hitTest, deleteShapeFromServer, broadcastData, generateId]);
-    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => { e.preventDefault(); const canvas = canvasRef.current; if (!canvas) return; const ctx = canvas.getContext("2d")!; let updatedShape: Shape | null = null; if (isTransforming && selectedShapeId && initialShapeStateRef.current) { const initialShape = initialShapeStateRef.current; setShapes(prev => prev.map(s => { if (s.id === selectedShapeId) { updatedShape = { ...s }; if ('touches' in e && e.touches.length === 2) { const t1 = e.touches[0]; const t2 = e.touches[1]; const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY); const currentAngle = Math.atan2(t1.clientY - t2.clientY, t1.clientX - t2.clientX); if (initialGestureStateRef.current) { updatedShape.scale = (initialShape.scale || 1) * (currentDist / initialGestureStateRef.current.distance); updatedShape.rotation = (initialShape.rotation || 0) + (currentAngle - initialGestureStateRef.current.angle); } } else if (updatedShape.type === 'line' && lineDragHandle && lineDragHandle !== 'body') { const localMouse = getLocalMouseCoordinates(getCoords(e), initialShape, ctx); if (lineDragHandle === 'start') { updatedShape.x = localMouse.x; updatedShape.y = localMouse.y; } else { updatedShape.x2 = localMouse.x; updatedShape.y2 = localMouse.y; } } else { const coords = getCoords(e); const altPressed = 'altKey' in e && e.altKey; const shiftPressed = 'shiftKey' in e && e.shiftKey; if (altPressed) { const center = getShapeCenter(initialShape); if (transformStartPointRef.current) { const startVec = new Complex(transformStartPointRef.current.x - center.x, transformStartPointRef.current.y - center.y); const currentVec = new Complex(coords.x - center.x, coords.y - center.y); updatedShape.rotation = (initialShape.rotation || 0) + (currentVec.angle - startVec.angle); } } else if (shiftPressed && updatedShape.type !== 'line') { const center = getShapeCenter(initialShape); if (transformStartPointRef.current) { const initialDist = Math.hypot(transformStartPointRef.current.x - center.x, transformStartPointRef.current.y - center.y); const currentDist = Math.hypot(coords.x - center.x, coords.y - center.y); if (initialDist > 0) { updatedShape.scale = (initialShape.scale || 1) * (currentDist / initialDist); } } } else { if (transformStartPointRef.current) { const deltaX = coords.x - transformStartPointRef.current.x; const deltaY = coords.y - transformStartPointRef.current.y; updatedShape.offsetX = (initialShape.offsetX || 0) + deltaX; updatedShape.offsetY = (initialShape.offsetY || 0) + deltaY; } } } return updatedShape; } return s; })); } else if (isDrawing && currentDrawingShapeId) { setShapes(prev => prev.map(s => { if (s.id === currentDrawingShapeId) { updatedShape = { ...s }; const start = startPointRef.current!; const currentCoords = getCoords(e); switch (updatedShape.type) { case 'pencil': if (updatedShape.points && Array.isArray(updatedShape.points)) { updatedShape.points.push(currentCoords); } else { updatedShape.points = [currentCoords]; } break; case 'rectangle': updatedShape.x = Math.min(start.x, currentCoords.x); updatedShape.y = Math.min(start.y, currentCoords.y); updatedShape.width = Math.abs(start.x - currentCoords.x); updatedShape.height = Math.abs(start.y - currentCoords.y); break; case 'circle': updatedShape.radius = Math.hypot(currentCoords.x - start.x, currentCoords.y - start.y) / 2; updatedShape.x = (start.x + currentCoords.x) / 2; updatedShape.y = (start.y + currentCoords.y) / 2; break; case 'line': updatedShape.x2 = currentCoords.x; updatedShape.y2 = currentCoords.y; break; default: break; } return updatedShape; } return s; })); } if (updatedShape) { broadcastData({ type: 'shape', shape: updatedShape }); } }, [isDrawing, isTransforming, selectedShapeId, lineDragHandle, broadcastData]);
-    const handleEndDrawing = useCallback(() => { const finalShapeId = isDrawing ? currentDrawingShapeId : selectedShapeId; if (finalShapeId) { const finalShape = shapes.find(s => s.id === finalShapeId); if (finalShape) { saveShapeToServer(finalShape); } } setIsDrawing(false); setIsTransforming(false); setLineDragHandle(null); setCurrentDrawingShapeId(null); setSelectedShapeId(null); initialGestureStateRef.current = null; }, [isDrawing, shapes, saveShapeToServer, currentDrawingShapeId, selectedShapeId]);
-    const handleTextInputBlur = useCallback(() => { if (isTyping && textInputValue.trim() !== '' && textInputPosition && canvasRef.current) { const newShapeId = currentDrawingShapeId || generateId(); const canvasRect = canvasRef.current.getBoundingClientRect(); const newTextShape: Shape = { id: newShapeId, type: 'text', x: textInputPosition.x - canvasRect.left, y: textInputPosition.y - canvasRect.top, text: textInputValue, fontSize: 24, fontFamily: 'Arial', color: 'white', offsetX: 0, offsetY: 0, rotation: 0, scale: 1, }; setShapes(prev => { const existingIndex = prev.findIndex(s => s.id === newShapeId); if (existingIndex !== -1) { const updatedShapes = [...prev]; updatedShapes[existingIndex] = newTextShape; return updatedShapes; } return [...prev, newTextShape]; }); saveShapeToServer(newTextShape); broadcastData({ type: 'shape', shape: newTextShape }); } setIsTyping(false); setTextInputPosition(null); setTextInputValue(''); setCurrentDrawingShapeId(null); }, [isTyping, textInputValue, textInputPosition, currentDrawingShapeId, generateId, saveShapeToServer, broadcastData]);
+    const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        e.preventDefault(); const coords = getCoords(e); const canvas = canvasRef.current; if (!canvas) return; const ctx = canvas.getContext("2d")!;
+        const clickedShape = shapes.slice().reverse().find(shape => hitTest(coords.x, coords.y, shape, ctx));
+        if (clickedShape) {
+            if (selectedTool === 'eraser') {
+                setShapes(prev => prev.filter(s => s.id !== clickedShape.id));
+                broadcastData({ type: 'delete', id: clickedShape.id });
+                deleteShapeFromServer(clickedShape.id); return;
+            }
+            setSelectedShapeId(clickedShape.id);
+            initialShapeStateRef.current = { ...clickedShape };
+            setIsTransforming(true);
+            if ('touches' in e && e.touches.length === 2) {
+                const t1 = e.touches[0]; const t2 = e.touches[1];
+                const distance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                const angle = Math.atan2(t1.clientY - t2.clientY, t1.clientX - t2.clientX);
+                initialGestureStateRef.current = { distance, angle };
+            } else {
+                transformStartPointRef.current = coords;
+                if (clickedShape.type === 'line' && clickedShape.x2 != null && clickedShape.y2 != null) {
+                    const localMouse = getLocalMouseCoordinates(coords, clickedShape, ctx);
+                    const handleRadius = 15 / (clickedShape.scale || 1);
+                    if (Math.hypot(localMouse.x - clickedShape.x, localMouse.y - clickedShape.y) < handleRadius) { setLineDragHandle('start'); }
+                    else if (Math.hypot(localMouse.x - clickedShape.x2, localMouse.y - clickedShape.y2) < handleRadius) { setLineDragHandle('end'); }
+                    else { setLineDragHandle('body'); }
+                }
+            } return;
+        }
+        setSelectedShapeId(null);
+        if (selectedTool === 'eraser') return;
+        if (selectedTool === 'text') {
+            setIsTyping(true);
+            setTextInputPosition({ x: coords.x + canvas.getBoundingClientRect().left, y: coords.y + canvas.getBoundingClientRect().top });
+            setTextInputValue(''); setCurrentDrawingShapeId(null); return;
+        }
+        setIsDrawing(true);
+        startPointRef.current = coords;
+        const newShapeId = generateId();
+        const defaultTransform = { offsetX: 0, offsetY: 0, rotation: 0, scale: 1 };
+        let newShape: Shape;
+        switch (selectedTool) {
+            case 'pencil': newShape = { id: newShapeId, type: 'pencil', points: [coords], x: coords.x, y: coords.y, ...defaultTransform }; break;
+            case 'rectangle': newShape = { id: newShapeId, type: 'rectangle', x: coords.x, y: coords.y, width: 0, height: 0, ...defaultTransform }; break;
+            case 'circle': newShape = { id: newShapeId, type: 'circle', x: coords.x, y: coords.y, radius: 0, ...defaultTransform }; break;
+            case 'line': newShape = { id: newShapeId, type: 'line', x: coords.x, y: coords.y, x2: coords.x, y2: coords.y, ...defaultTransform }; break;
+            default: return;
+        }
+        setCurrentDrawingShapeId(newShapeId);
+        setShapes(prev => [...prev, newShape]);
+    }, [selectedTool, shapes, hitTest, deleteShapeFromServer, broadcastData, generateId]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        e.preventDefault(); const canvas = canvasRef.current; if (!canvas) return; const ctx = canvas.getContext("2d")!; let updatedShape: Shape | null = null;
+        if (isTransforming && selectedShapeId && initialShapeStateRef.current) {
+            const initialShape = initialShapeStateRef.current;
+            setShapes(prev => prev.map(s => {
+                if (s.id === selectedShapeId) {
+                    updatedShape = { ...s };
+                    if ('touches' in e && e.touches.length === 2) {
+                        const t1 = e.touches[0]; const t2 = e.touches[1];
+                        const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                        const currentAngle = Math.atan2(t1.clientY - t2.clientY, t1.clientX - t2.clientX);
+                        if (initialGestureStateRef.current) {
+                            updatedShape.scale = (initialShape.scale || 1) * (currentDist / initialGestureStateRef.current.distance);
+                            updatedShape.rotation = (initialShape.rotation || 0) + (currentAngle - initialGestureStateRef.current.angle);
+                        }
+                    } else if (updatedShape.type === 'line' && lineDragHandle && lineDragHandle !== 'body') {
+                        const localMouse = getLocalMouseCoordinates(getCoords(e), initialShape, ctx);
+                        if (lineDragHandle === 'start') { updatedShape.x = localMouse.x; updatedShape.y = localMouse.y; }
+                        else { updatedShape.x2 = localMouse.x; updatedShape.y2 = localMouse.y; }
+                    } else {
+                        const coords = getCoords(e);
+                        const altPressed = 'altKey' in e && e.altKey;
+                        const shiftPressed = 'shiftKey' in e && e.shiftKey;
+                        if (altPressed) {
+                            const center = getShapeCenter(initialShape);
+                            if (transformStartPointRef.current) {
+                                const startVec = new Complex(transformStartPointRef.current.x - center.x, transformStartPointRef.current.y - center.y);
+                                const currentVec = new Complex(coords.x - center.x, coords.y - center.y);
+                                updatedShape.rotation = (initialShape.rotation || 0) + (currentVec.angle - startVec.angle);
+                            }
+                        } else if (shiftPressed && updatedShape.type !== 'line') {
+                            const center = getShapeCenter(initialShape);
+                            if (transformStartPointRef.current) {
+                                const initialDist = Math.hypot(transformStartPointRef.current.x - center.x, transformStartPointRef.current.y - center.y);
+                                const currentDist = Math.hypot(coords.x - center.x, coords.y - center.y);
+                                if (initialDist > 0) {
+                                    updatedShape.scale = (initialShape.scale || 1) * (currentDist / initialDist);
+                                }
+                            }
+                        } else {
+                            if (transformStartPointRef.current) {
+                                const deltaX = coords.x - transformStartPointRef.current.x;
+                                const deltaY = coords.y - transformStartPointRef.current.y;
+                                updatedShape.offsetX = (initialShape.offsetX || 0) + deltaX;
+                                updatedShape.offsetY = (initialShape.offsetY || 0) + deltaY;
+                            }
+                        }
+                    }
+                    return updatedShape;
+                }
+                return s;
+            }));
+        } else if (isDrawing && currentDrawingShapeId) {
+            setShapes(prev => prev.map(s => {
+                if (s.id === currentDrawingShapeId) {
+                    updatedShape = { ...s }; const start = startPointRef.current!; const currentCoords = getCoords(e);
+                    switch (updatedShape.type) {
+                        case 'pencil': if (updatedShape.points && Array.isArray(updatedShape.points)) { updatedShape.points.push(currentCoords); } else { updatedShape.points = [currentCoords]; } break;
+                        case 'rectangle': updatedShape.x = Math.min(start.x, currentCoords.x); updatedShape.y = Math.min(start.y, currentCoords.y); updatedShape.width = Math.abs(start.x - currentCoords.x); updatedShape.height = Math.abs(start.y - currentCoords.y); break;
+                        case 'circle': updatedShape.radius = Math.hypot(currentCoords.x - start.x, currentCoords.y - start.y) / 2; updatedShape.x = (start.x + currentCoords.x) / 2; updatedShape.y = (start.y + currentCoords.y) / 2; break;
+                        case 'line': updatedShape.x2 = currentCoords.x; updatedShape.y2 = currentCoords.y; break;
+                    }
+                    return updatedShape;
+                }
+                return s;
+            }));
+        }
+        if (updatedShape) {
+            broadcastData({ type: 'shape', shape: updatedShape });
+        }
+    }, [isDrawing, isTransforming, selectedShapeId, lineDragHandle, broadcastData]);
+
+    const handleEndDrawing = useCallback(() => {
+        const finalShapeId = isDrawing ? currentDrawingShapeId : selectedShapeId;
+        if (finalShapeId) {
+            const finalShape = shapes.find(s => s.id === finalShapeId);
+            if (finalShape) {
+                saveShapeToServer(finalShape);
+            }
+        }
+        setIsDrawing(false); setIsTransforming(false); setLineDragHandle(null);
+        setCurrentDrawingShapeId(null); setSelectedShapeId(null); initialGestureStateRef.current = null;
+    }, [isDrawing, shapes, saveShapeToServer, currentDrawingShapeId, selectedShapeId]);
+
+    const handleTextInputBlur = useCallback(() => {
+        if (isTyping && textInputValue.trim() !== '' && textInputPosition && canvasRef.current) {
+            const newShapeId = currentDrawingShapeId || generateId();
+            const canvasRect = canvasRef.current.getBoundingClientRect();
+            const newTextShape: Shape = {
+                id: newShapeId, type: 'text', x: textInputPosition.x - canvasRect.left, y: textInputPosition.y - canvasRect.top, text: textInputValue,
+                fontSize: 24, fontFamily: 'Arial', color: 'white', offsetX: 0, offsetY: 0, rotation: 0, scale: 1,
+            };
+            setShapes(prev => {
+                const existingIndex = prev.findIndex(s => s.id === newShapeId);
+                if (existingIndex !== -1) {
+                    const updatedShapes = [...prev];
+                    updatedShapes[existingIndex] = newTextShape;
+                    return updatedShapes;
+                }
+                return [...prev, newTextShape];
+            });
+            saveShapeToServer(newTextShape);
+            broadcastData({ type: 'shape', shape: newTextShape });
+        }
+        setIsTyping(false); setTextInputPosition(null); setTextInputValue(''); setCurrentDrawingShapeId(null);
+    }, [isTyping, textInputValue, textInputPosition, currentDrawingShapeId, generateId, saveShapeToServer, broadcastData]);
 
     const handleSendMessage = () => {
         if (inputValue.trim() === '' || !userInfo) return;
@@ -299,7 +435,7 @@ export default function Imp() {
         const messagePayload = {
             type: 'chat_message',
             message: {
-                id: generateId(), 
+                id: generateId(),
                 senderId: userInfo.userId,
                 senderFirstName: userInfo.firstname,
                 senderLastName: userInfo.lastname || '',
@@ -310,12 +446,12 @@ export default function Imp() {
 
         if (ws.current?.readyState === WebSocket.OPEN) {
             ws.current.send(JSON.stringify(messagePayload));
-            setInputValue(''); // Clear input after sending
+            setInputValue('');
         } else {
             console.warn("WebSocket not open. Chat message not sent.");
         }
     };
-    
+
     return (
         <div style={{ display: 'flex', height: '100vh', background: '#333', color: 'white' }}>
             <Sidebar collapsed={collapsed} backgroundColor="#222" style={{ height: '100%', borderRight: '1px solid #444' }}>

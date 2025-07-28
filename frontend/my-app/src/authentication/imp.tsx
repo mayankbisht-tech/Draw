@@ -84,7 +84,7 @@ export default function Imp() {
     if (!roomId) return;
     const token = localStorage.getItem('token');
     const connectWebSocket = () => {
-      const socket = new WebSocket(`ws://localhost:3000/?roomId=${roomId}${token ? `&token=${token}` : ''}`);
+      const socket = new WebSocket(`ws://https://excelidraw-ncsy.onrender.com/?roomId=${roomId}${token ? `&token=${token}` : ''}`);
       ws.current = socket;
       socket.onopen = () => setWsConnected(true);
       socket.onclose = () => setWsConnected(false);
@@ -135,8 +135,8 @@ export default function Imp() {
   }, [shapes, canvasDimensions, selectedShapeId]);
 
   useEffect(() => { const updateCanvasDimensions = () => { const sw = collapsed ? 80 : 256; setCanvasDimensions({ width: window.innerWidth - sw - 40, height: window.innerHeight - 80 - 40 }); }; updateCanvasDimensions(); window.addEventListener('resize', updateCanvasDimensions); return () => window.removeEventListener('resize', updateCanvasDimensions); }, [collapsed]);
-  const saveShapeToServer = useCallback(async (shape: Shape) => { if (!roomId) return; try { await fetch(`http://localhost:3000/api/room/${roomId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(shape) }); } catch (error) { console.error("Failed to save shape:", error); } }, [roomId]);
-  const deleteShapeFromServer = useCallback(async (shapeId: string) => { if (!shapeId) return; try { await fetch(`http://localhost:3000/api/shape/${shapeId}`, { method: 'DELETE' }); } catch (error) { console.error("Failed to delete shape from server:", error); } }, []);
+  const saveShapeToServer = useCallback(async (shape: Shape) => { if (!roomId) return; try { await fetch(`http://https://excelidraw-ncsy.onrender.com/api/room/${roomId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(shape) }); } catch (error) { console.error("Failed to save shape:", error); } }, [roomId]);
+  const deleteShapeFromServer = useCallback(async (shapeId: string) => { if (!shapeId) return; try { await fetch(`http://https://excelidraw-ncsy.onrender.com/api/shape/${shapeId}`, { method: 'DELETE' }); } catch (error) { console.error("Failed to delete shape from server:", error); } }, []);
   const broadcastData = useCallback((data: object) => { if (ws.current?.readyState === WebSocket.OPEN) { ws.current.send(JSON.stringify(data)); } }, []);
   const getCoords = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => { const canvas = canvasRef.current!; const rect = canvas.getBoundingClientRect(); const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX; const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY; return { x: clientX - rect.left, y: clientY - rect.top }; };
 

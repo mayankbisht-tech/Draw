@@ -16,6 +16,7 @@ const server = http.createServer(app);
 
 app.use(cors({
   origin: [
+    'https://draw-29wxmqmso-mayankbisht-techs-projects.vercel.app',
     'http://localhost:5173', 
     'https://excelidraw-ncsy.onrender.com', 
     'https://draw-three-lovat.vercel.app', 

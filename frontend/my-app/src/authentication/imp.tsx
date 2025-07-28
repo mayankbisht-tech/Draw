@@ -311,7 +311,7 @@ export default function Imp() {
                 }),
               }}
             className="flex flex-col h-full">
-          <MenuItem onClick={() => setCollapsed(!collapsed)} icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">{collapsed ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 12h14" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />}</svg>} className="text-gray-400 hover:bg-zinc-800">{collapsed ? 'Expand' : 'Collapse'}</MenuItem>
+          <MenuItem onClick={() => setCollapsed(!collapsed)} icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">{collapsed ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 12h14" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />}</svg>} className="text-gray-400 hover:bg-zinc-800">{collapsed ? 'Draw' : 'Menu'}</MenuItem>
           {userInfo && (<MenuItem className="text-gray-200 font-bold mt-4">You: {userInfo.firstname} {userInfo.lastname}</MenuItem>)}
           <MenuItem className="bg-zinc-900 text-gray-400" onClick={() => navigate("/dashboard")}>Leave Room</MenuItem>
           <SubMenu label="Online Players" className="text-gray-400 mt-4">{onlineUsers.length > 0 ? (onlineUsers.map((user) => (<MenuItem key={user.userId} className="text-gray-400">{user.firstname} {user.lastname} {user.userId === userInfo?.userId ? '(You)' : ''}</MenuItem>))) : (<MenuItem className="text-gray-500">No other players online</MenuItem>)}</SubMenu>
